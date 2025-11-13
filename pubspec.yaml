@@ -1,0 +1,30 @@
+name: recipe_organizer
+description: Recipify - Anything into a recipe
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+  flutter: ^3.35.0
+
+dependencies:
+  bloc: ^9.0.1
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^9.1.1
+  flutter_localizations:
+    sdk: flutter
+  forui: ^0.16.0
+  forui_assets: ^0.16.0
+  intl: ^0.20.2
+
+dev_dependencies:
+  bloc_test: ^10.0.0
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.0.0
+
+flutter:
+  generate: true
+  uses-material-design: true
