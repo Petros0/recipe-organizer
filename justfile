@@ -25,15 +25,22 @@ format:
     d fix --apply
     d format . --line-length 120
     @echo "Code formatted successfully!"
-  
+
 dev:
     @echo "Running development flavor..."
     f run --flavor development --target lib/main_development.dart
 
 devices:
     @echo "Listing connected devices..."
-    f devices
+    f devices 
 
-pair host port:
+pair host port connectPort:
     @echo "Pairing device..."
-    adb pair {{host}}:{{port}}
+    adb pair {{ host }}:{{ port }}
+    @echo "Pairing successful! Ready to connect."
+    @just connect {{ host }} {{ connectPort }}
+    
+connect host port:
+    @echo "Connecting device..."
+    adb connect {{ host }}:{{ port }}
+    @echo "Device connected successfully!"

@@ -1,46 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:forui/forui.dart';
-import 'package:recipe_organizer/counter/counter.dart';
-import 'package:recipe_organizer/l10n/l10n.dart';
+import 'package:signals/signals_flutter.dart';
 
-class CounterPage extends StatelessWidget {
+class CounterPage extends StatefulWidget {
   const CounterPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => CounterCubit(),
-      child: const CounterView(),
-    );
-  }
+  State<CounterPage> createState() => _CounterPageState();
 }
 
-class CounterView extends StatelessWidget {
-  const CounterView({super.key});
+class _CounterPageState extends State<CounterPage> {
+  final _counter = signal<int>(0);
+
+  void _increment() => _counter.value++;
+  void _decrement() => _counter.value--;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     return FScaffold(
+      header: FHeader(
+        title: const Text('Settings'),
+        suffixes: [
+          FHeaderAction(
+            icon: const Icon(FIcons.ellipsis),
+            onPress: () {},
+          ),
+        ],
+      ),
       child: Column(
         children: [
-          const CounterText(),
-          FButton(onPress: () => context.read<CounterCubit>().increment(), child: const Icon(Icons.add)),
-          FButton(onPress: () => context.read<CounterCubit>().decrement(), child: const Icon(Icons.remove)),
+          Text('Counter: ${_counter.watch(context)}'),
+          FButton(onPress: _increment, child: const Icon(Icons.add)),
+          FButton(onPress: _decrement, child: const Icon(Icons.remove)),
         ],
       ),
     );
-  }
-}
-
-class CounterText extends StatelessWidget {
-  const CounterText({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final count = context.select((CounterCubit cubit) => cubit.state);
-    return Text('$count', style: theme.textTheme.displayLarge);
   }
 }
