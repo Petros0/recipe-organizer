@@ -93,18 +93,28 @@ func TestFetchRecipeFromURL_Integration(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		urlStr      string
-		wantName    bool // Whether we expect a recipe name to be present
-		wantImage   bool // Whether we expect an image to be present
-		description string
+		name          string
+		urlStr        string
+		wantName      bool // Whether we expect a recipe name to be present
+		wantImage     bool // Whether we expect an image to be present
+		requireRecipe bool // Whether recipe JSON-LD is required (some sites don't have it)
+		description   string
 	}{
 		{
-			name:        "akispetretzikis.com recipe",
-			urlStr:      "https://akispetretzikis.com/recipe/175/rizoto-me-manitaria",
-			wantName:    true,
-			wantImage:   true,
-			description: "Test parsing JSON-LD from actual recipe website",
+			name:          "akispetretzikis.com recipe",
+			urlStr:        "https://akispetretzikis.com/recipe/175/rizoto-me-manitaria",
+			wantName:      true,
+			wantImage:     true,
+			requireRecipe: true,
+			description:   "Test parsing JSON-LD from actual recipe website",
+		},
+		{
+			name:          "alfiecooks.substack.com recipe",
+			urlStr:        "https://alfiecooks.substack.com/p/caramelised-onion-sun-dried-tomato",
+			wantName:      false,
+			wantImage:     false,
+			requireRecipe: false,
+			description:   "Test fetching Substack article (may not have JSON-LD recipe data)",
 		},
 	}
 
@@ -128,7 +138,13 @@ func TestFetchRecipeFromURL_Integration(t *testing.T) {
 			}
 
 			if recipe == nil {
-				t.Fatal("fetchRecipeFromURL() returned nil recipe")
+				if tt.requireRecipe {
+					t.Fatal("fetchRecipeFromURL() returned nil recipe")
+				} else {
+					// Some sites don't have JSON-LD recipe data, which is okay
+					t.Logf("No Recipe JSON-LD found on page (this is expected for some sites like Substack)")
+					return
+				}
 			}
 
 			// Validate required fields
