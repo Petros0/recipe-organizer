@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 )
@@ -46,15 +45,15 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		}, Context.Res.WithStatusCode(http.StatusBadRequest))
 	}
 
-	// Fetch HTML content - try HTTP client first, fallback to headless browser if needed
-	Context.Log(fmt.Sprintf("Fetching recipe from: %s", targetURL))
-	recipe, err := fetchRecipeFromURL(targetURL)
+	// Create strategy executor with HTTP client first, then headless browser as fallback
+	executor := NewStrategyExecutor(
+		&HTTPClientStrategy{},
+		&BrowserClientStrategy{},
+	)
 
-	// If HTTP client fails with 403/429 (bot protection), try headless browser
-	if err != nil && (strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "429")) {
-		Context.Log("HTTP request blocked, attempting with headless browser...")
-		recipe, err = fetchRecipeFromURLWithBrowser(targetURL)
-	}
+	// Fetch recipe using the strategy executor
+	Context.Log(fmt.Sprintf("Fetching recipe from: %s", targetURL))
+	recipe, err := executor.Execute(targetURL, Context.Log)
 
 	if err != nil {
 		Context.Error(fmt.Sprintf("Error fetching recipe: %v", err))

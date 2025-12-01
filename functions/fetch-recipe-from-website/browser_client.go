@@ -8,9 +8,22 @@ import (
 	"github.com/go-rod/rod/lib/launcher"
 )
 
-// fetchRecipeFromURLWithBrowser uses a headless browser to fetch the page
-// This is a fallback when HTTP client is blocked by bot protection
-func fetchRecipeFromURLWithBrowser(urlStr string) (*Recipe, error) {
+// BrowserClientStrategy implements FetchStrategy using a headless browser
+// This is typically used as a fallback when HTTP client is blocked by bot protection
+type BrowserClientStrategy struct{}
+
+// Name returns the strategy name for logging
+func (s *BrowserClientStrategy) Name() string {
+	return "Headless Browser"
+}
+
+// CanRetry always returns false as this is typically the last resort strategy
+func (s *BrowserClientStrategy) CanRetry(err error) bool {
+	return false
+}
+
+// Fetch uses a headless browser to fetch the page and extract recipe data
+func (s *BrowserClientStrategy) Fetch(urlStr string) (*Recipe, error) {
 	// Launch browser with stealth options to avoid detection
 	l := launcher.New().
 		Headless(true).
@@ -66,4 +79,3 @@ func fetchRecipeFromURLWithBrowser(urlStr string) (*Recipe, error) {
 	// Extract recipe from HTML
 	return extractRecipeFromHTML(html)
 }
-

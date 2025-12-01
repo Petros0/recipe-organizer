@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/url"
-	"strings"
 	"testing"
 )
 
@@ -118,15 +117,18 @@ func TestFetchRecipeFromURL_Integration(t *testing.T) {
 		},
 	}
 
+	// Create strategy executor with HTTP client first, then headless browser as fallback
+	executor := NewStrategyExecutor(
+		&HTTPClientStrategy{},
+		&BrowserClientStrategy{},
+	)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recipe, err := fetchRecipeFromURL(tt.urlStr)
-
-			// If HTTP client fails with 403/429 (bot protection), try headless browser
-			if err != nil && (strings.Contains(err.Error(), "403") || strings.Contains(err.Error(), "429")) {
-				t.Logf("HTTP request blocked (403/429), attempting with headless browser...")
-				recipe, err = fetchRecipeFromURLWithBrowser(tt.urlStr)
-			}
+			// Use strategy executor which handles fallback automatically
+			recipe, err := executor.Execute(tt.urlStr, func(msgs ...interface{}) {
+				t.Log(msgs...)
+			})
 
 			if err != nil {
 				// If both methods fail, log but don't fail the test
@@ -226,46 +228,46 @@ func TestToRecipeResponse(t *testing.T) {
 	strPtr := func(s string) *string { return &s }
 
 	tests := []struct {
-		name               string
-		inputURL           string
-		inputRecipe        *Recipe
-		expectedURL        string
-		expectedName       string
-		expectedDesc       string
-		expectedImage      string
-		expectedPrepTime   string
-		expectedCookTime   string
-		expectedTotalTime  string
-		expectedAuthor     string
-		expectedIngredients []string
+		name                 string
+		inputURL             string
+		inputRecipe          *Recipe
+		expectedURL          string
+		expectedName         string
+		expectedDesc         string
+		expectedImage        string
+		expectedPrepTime     string
+		expectedCookTime     string
+		expectedTotalTime    string
+		expectedAuthor       string
+		expectedIngredients  []string
 		expectedInstructions []string
 	}{
 		{
 			name:     "full recipe with all fields",
 			inputURL: "https://example.com/recipe/1",
 			inputRecipe: &Recipe{
-				Name:        "Test Recipe",
-				Description: strPtr("A delicious test recipe"),
-				Image:       []string{"https://example.com/image1.jpg", "https://example.com/image2.jpg"},
-				PrepTime:    strPtr("PT15M"),
-				CookTime:    strPtr("PT30M"),
-				TotalTime:   strPtr("PT45M"),
-				Author:      &Person{Name: "Test Chef"},
+				Name:             "Test Recipe",
+				Description:      strPtr("A delicious test recipe"),
+				Image:            []string{"https://example.com/image1.jpg", "https://example.com/image2.jpg"},
+				PrepTime:         strPtr("PT15M"),
+				CookTime:         strPtr("PT30M"),
+				TotalTime:        strPtr("PT45M"),
+				Author:           &Person{Name: "Test Chef"},
 				RecipeIngredient: []string{"1 cup flour", "2 eggs", "1 tsp salt"},
 				RecipeInstructions: []RecipeInstruction{
 					{Type: "HowToStep", Text: "Mix flour and salt"},
 					{Type: "HowToStep", Text: "Add eggs and stir"},
 				},
 			},
-			expectedURL:        "https://example.com/recipe/1",
-			expectedName:       "Test Recipe",
-			expectedDesc:       "A delicious test recipe",
-			expectedImage:      "https://example.com/image1.jpg",
-			expectedPrepTime:   "PT15M",
-			expectedCookTime:   "PT30M",
-			expectedTotalTime:  "PT45M",
-			expectedAuthor:     "Test Chef",
-			expectedIngredients: []string{"1 cup flour", "2 eggs", "1 tsp salt"},
+			expectedURL:          "https://example.com/recipe/1",
+			expectedName:         "Test Recipe",
+			expectedDesc:         "A delicious test recipe",
+			expectedImage:        "https://example.com/image1.jpg",
+			expectedPrepTime:     "PT15M",
+			expectedCookTime:     "PT30M",
+			expectedTotalTime:    "PT45M",
+			expectedAuthor:       "Test Chef",
+			expectedIngredients:  []string{"1 cup flour", "2 eggs", "1 tsp salt"},
 			expectedInstructions: []string{"Mix flour and salt", "Add eggs and stir"},
 		},
 		{
@@ -275,15 +277,15 @@ func TestToRecipeResponse(t *testing.T) {
 				Name:  "Minimal Recipe",
 				Image: []string{"https://example.com/image.jpg"},
 			},
-			expectedURL:        "https://example.com/recipe/2",
-			expectedName:       "Minimal Recipe",
-			expectedDesc:       "",
-			expectedImage:      "https://example.com/image.jpg",
-			expectedPrepTime:   "",
-			expectedCookTime:   "",
-			expectedTotalTime:  "",
-			expectedAuthor:     "",
-			expectedIngredients: []string{},
+			expectedURL:          "https://example.com/recipe/2",
+			expectedName:         "Minimal Recipe",
+			expectedDesc:         "",
+			expectedImage:        "https://example.com/image.jpg",
+			expectedPrepTime:     "",
+			expectedCookTime:     "",
+			expectedTotalTime:    "",
+			expectedAuthor:       "",
+			expectedIngredients:  []string{},
 			expectedInstructions: []string{},
 		},
 		{
@@ -310,15 +312,15 @@ func TestToRecipeResponse(t *testing.T) {
 					},
 				},
 			},
-			expectedURL:        "https://example.com/recipe/3",
-			expectedName:       "Recipe with Sections",
-			expectedDesc:       "",
-			expectedImage:      "https://example.com/image.jpg",
-			expectedPrepTime:   "",
-			expectedCookTime:   "",
-			expectedTotalTime:  "",
-			expectedAuthor:     "",
-			expectedIngredients: []string{},
+			expectedURL:          "https://example.com/recipe/3",
+			expectedName:         "Recipe with Sections",
+			expectedDesc:         "",
+			expectedImage:        "https://example.com/image.jpg",
+			expectedPrepTime:     "",
+			expectedCookTime:     "",
+			expectedTotalTime:    "",
+			expectedAuthor:       "",
+			expectedIngredients:  []string{},
 			expectedInstructions: []string{"Prepare ingredients", "Preheat oven", "Cook for 30 minutes"},
 		},
 		{
@@ -328,15 +330,15 @@ func TestToRecipeResponse(t *testing.T) {
 				Name:  "No Image Recipe",
 				Image: []string{},
 			},
-			expectedURL:        "https://example.com/recipe/4",
-			expectedName:       "No Image Recipe",
-			expectedDesc:       "",
-			expectedImage:      "",
-			expectedPrepTime:   "",
-			expectedCookTime:   "",
-			expectedTotalTime:  "",
-			expectedAuthor:     "",
-			expectedIngredients: []string{},
+			expectedURL:          "https://example.com/recipe/4",
+			expectedName:         "No Image Recipe",
+			expectedDesc:         "",
+			expectedImage:        "",
+			expectedPrepTime:     "",
+			expectedCookTime:     "",
+			expectedTotalTime:    "",
+			expectedAuthor:       "",
+			expectedIngredients:  []string{},
 			expectedInstructions: []string{},
 		},
 	}
