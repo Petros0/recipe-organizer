@@ -4,29 +4,40 @@ This document provides guidance for AI agents working on this Appwrite Cloud Fun
 
 ## Overview
 
-**fetch-recipe-from-website** is a Go-based Appwrite Cloud Function that extracts structured recipe data from any website by parsing schema.org Recipe JSON-LD markup. It provides automatic fallback to headless browser rendering when standard HTTP requests are blocked by bot protection.
+**fetch-recipe-from-website** is a Go-based Appwrite Cloud Function that extracts structured recipe data from any website. It uses a multi-layered approach:
+1. First tries parsing schema.org Recipe JSON-LD markup via HTTP
+2. Falls back to Firecrawl API for bot-protected sites
+3. Uses Firecrawl's LLM extraction for sites without JSON-LD structured data
 
 ## Tech Stack
 
-| Layer        | Technology                         |
-| ------------ | ---------------------------------- |
-| Language     | Go 1.23+                           |
-| Runtime      | Appwrite Functions (Go 1.23)       |
-| HTML Parsing | [goquery](https://github.com/PuerkitoBio/goquery) |
-| Headless     | [go-rod](https://go-rod.github.io) |
-| Types        | open-runtimes/types-for-go v4      |
+| Layer         | Technology                         |
+| ------------- | ---------------------------------- |
+| Language      | Go 1.23+                           |
+| Runtime       | Appwrite Functions (Go 1.23)       |
+| HTML Parsing  | [goquery](https://github.com/PuerkitoBio/goquery) |
+| Web Scraping  | [Firecrawl](https://firecrawl.dev) |
+| Types         | open-runtimes/types-for-go v4      |
 
 ## Project Structure
 
 ```
 functions/fetch-recipe-from-website/
-├── main.go          # Handler and all extraction logic
-├── main_test.go     # Unit and integration tests
-├── go.mod           # Go module definition
-├── go.sum           # Dependency checksums
-├── build/           # Build artifacts (gitignored)
-├── README.md        # API documentation
-└── AGENTS.md        # This file
+├── main.go              # Handler entry point
+├── strategy.go          # Strategy pattern executor
+├── http_client.go       # HTTP client strategy
+├── firecrawl_client.go  # Firecrawl API strategy (fallback + LLM extraction)
+├── parser.go            # JSON-LD extraction logic
+├── field_parsers.go     # Field-specific parsers
+├── types.go             # Data models
+├── response.go          # Response formatting
+├── utils.go             # Utility functions
+├── main_test.go         # Unit and integration tests
+├── go.mod               # Go module definition
+├── go.sum               # Dependency checksums
+├── build/               # Build artifacts (gitignored)
+├── README.md            # API documentation
+└── AGENTS.md            # This file
 ```
 
 ## Data Models
@@ -131,18 +142,28 @@ Extract recipe from URL.
 ### Request Flow
 
 ```
-Request → URL Validation → HTTP Fetch → Extract JSON-LD → Parse Recipe → Response
+Request → URL Validation → HTTP Client → JSON-LD Parser → Response
                               ↓ (403/429)
-                     Headless Browser Fallback
+                         Firecrawl (HTML) → JSON-LD Parser
+                              ↓ (no JSON-LD found)
+                         Firecrawl (LLM Extract) → Recipe Schema → Response
 ```
+
+### Strategy Pattern
+
+The function uses a strategy pattern with automatic fallback:
+
+1. **HTTPClientStrategy** - Fast, free HTTP requests with browser headers
+2. **FirecrawlStrategy** - Managed API with bot protection bypass and LLM extraction
 
 ### Key Functions
 
 | Function                       | Purpose                                      |
 | ------------------------------ | -------------------------------------------- |
 | `Main`                         | Entry point, request handling                |
-| `fetchRecipeFromURL`           | HTTP client with browser headers             |
-| `fetchRecipeFromURLWithBrowser`| Headless browser fallback (go-rod)           |
+| `StrategyExecutor.Execute`     | Executes strategies with fallback logic      |
+| `HTTPClientStrategy.Fetch`     | HTTP client with browser headers             |
+| `FirecrawlStrategy.Fetch`      | Firecrawl API (HTML + LLM fallback)          |
 | `extractRecipeFromHTML`        | Parse HTML, find JSON-LD script tags         |
 | `extractRecipeFromJSONLD`      | Handle various JSON-LD formats               |
 | `extractRecipeFromObject`      | Parse single Recipe object                   |
@@ -150,13 +171,15 @@ Request → URL Validation → HTTP Fetch → Extract JSON-LD → Parse Recipe �
 | `parseInstructions`            | Handle HowToStep/HowToSection formats        |
 | `parseAuthor`                  | Handle string/Person/array formats           |
 | `parseNutrition`               | Parse NutritionInformation                   |
+| `fetchWithLLMExtraction`       | AI-based recipe extraction for sites without JSON-LD |
 
-### Bot Protection Bypass
+### Extraction Strategies
 
-The function uses two strategies:
+The function uses a cost-optimized hybrid approach:
 
-1. **HTTP Client with Browser Headers** - Sets realistic User-Agent, Accept, and Sec-Fetch headers
-2. **Headless Browser Fallback** - Uses go-rod with stealth options when HTTP returns 403/429
+1. **HTTP Client** - Free, works for ~80% of recipe sites
+2. **Firecrawl HTML** - Handles bot protection, parses JSON-LD (1 credit)
+3. **Firecrawl LLM Extract** - AI extraction for sites without structured data (higher cost)
 
 ## Testing
 
@@ -222,33 +245,42 @@ go mod tidy
 | Permissions | `any`          |
 | Timeout     | 15 seconds     |
 
+## Environment Variables
+
+| Variable           | Required | Description                        |
+| ------------------ | -------- | ---------------------------------- |
+| `FIRECRAWL_API_KEY`| Yes      | Firecrawl API key for fallback     |
+
 ## Dependencies
 
 ```go
 require (
     github.com/open-runtimes/types-for-go/v4 v4.0.6  // Appwrite runtime types
     github.com/PuerkitoBio/goquery v1.11.0           // HTML parsing
-    github.com/go-rod/rod v0.116.2                   // Headless browser
+    github.com/mendableai/firecrawl-go/v2 v2.4.0     // Firecrawl web scraping API
 )
 ```
 
 ## Important Notes for Agents
 
-1. **Required Fields** - Recipe must have `name` and `image` to be valid
+1. **Required Fields** - Recipe must have `name` and `image` to be valid (relaxed for LLM extraction)
 2. **JSON-LD Formats** - Handle single object, arrays, and `@graph` containers
 3. **Type Variations** - Check both `"Recipe"` and URLs like `"https://schema.org/Recipe"`
 4. **Image Formats** - Can be string, array of strings, or ImageObject with `url` property
 5. **Instructions Formats** - Handle both HowToStep and nested HowToSection
 6. **Author Formats** - Can be string, Person object, or array (takes first)
-7. **Bot Protection** - HTTP 403/429 triggers automatic headless browser fallback
-8. **Timeout** - HTTP client: 30s, Browser: 20s, Function total: 15s (increase if needed)
-9. **Pointer Types** - Optional fields use `*string` to distinguish empty from missing
-10. **Error Handling** - Return descriptive JSON errors with appropriate HTTP status codes
+7. **Bot Protection** - HTTP 403/429 triggers automatic Firecrawl fallback
+8. **LLM Extraction** - Used when JSON-LD is not found on the page
+9. **Timeout** - HTTP client: 30s, Firecrawl: API default
+10. **Pointer Types** - Optional fields use `*string` to distinguish empty from missing
+11. **Error Handling** - Return descriptive JSON errors with appropriate HTTP status codes
+12. **Cost Optimization** - HTTP client is tried first (free), Firecrawl only when needed
 
 ## Limitations
 
 - Only extracts first Recipe found on page
-- Requires schema.org JSON-LD (not microdata or RDFa)
-- Headless browser may fail on sites with advanced bot protection
+- JSON-LD parsing doesn't support microdata or RDFa
+- LLM extraction quality depends on page content structure
 - Some recipe fields may be empty if not provided by source site
+- Requires `FIRECRAWL_API_KEY` environment variable for fallback
 

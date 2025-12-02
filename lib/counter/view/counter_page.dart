@@ -10,7 +10,7 @@ class CounterPage extends StatefulWidget {
 }
 
 class _CounterPageState extends State<CounterPage> {
-  final _counter = signal<int>(0);
+  final FlutterSignal<int> _counter = signal<int>(0);
 
   void _increment() => _counter.value++;
   void _decrement() => _counter.value--;

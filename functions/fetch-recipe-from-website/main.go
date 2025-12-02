@@ -45,10 +45,11 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		}, Context.Res.WithStatusCode(http.StatusBadRequest))
 	}
 
-	// Create strategy executor with HTTP client first, then headless browser as fallback
+	// Create strategy executor with HTTP client first, then Firecrawl as fallback
+	// Firecrawl handles bot protection and can use LLM extraction if no JSON-LD is found
 	executor := NewStrategyExecutor(
 		&HTTPClientStrategy{},
-		&BrowserClientStrategy{},
+		NewFirecrawlStrategy(),
 	)
 
 	// Fetch recipe using the strategy executor
