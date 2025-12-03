@@ -60,5 +60,69 @@
             "specification": "s-0.5vcpu-512mb",
             "path": "functions/fetch-recipe-from-website"
         }
+    ],
+    "tablesDB": [
+        {
+            "$id": "6930a343001607ad7cbd",
+            "name": "recipe-organizer-db",
+            "enabled": true
+        }
+    ],
+    "tables": [
+        {
+            "$id": "6930a34300165ad1d129",
+            "$permissions": [],
+            "databaseId": "6930a343001607ad7cbd",
+            "name": "recipe_request",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "url",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "format": "url",
+                    "default": null
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "REQUESTED",
+                        "IN_PROGRESS",
+                        "COMPLETED"
+                    ],
+                    "format": "enum",
+                    "default": null
+                }
+            ],
+            "indexes": []
+        },
+        {
+            "$id": "recipe",
+            "$permissions": [],
+            "databaseId": "6930a343001607ad7cbd",
+            "name": "recipe",
+            "enabled": true,
+            "rowSecurity": false,
+            "columns": [
+                {
+                    "key": "fk_recipe_request",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedTable": "6930a34300165ad1d129",
+                    "relationType": "oneToOne",
+                    "twoWay": false,
+                    "twoWayKey": "6930a5310026f555d41a",
+                    "onDelete": "restrict",
+                    "side": "parent"
+                }
+            ],
+            "indexes": []
+        }
     ]
 }

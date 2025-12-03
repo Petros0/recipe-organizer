@@ -1,4 +1,10 @@
-Review the changes that we have done to the codebase and commit with an appropriate message.
+---
+description: State and Commit all changes
+---
+
+
+Review the changes that we have done to the codebase.
+Stage and Commit with an appropriate message.
 
 Make sure that you also add a relative good description when you are commiting, so that the commit is clear and understood.
 
