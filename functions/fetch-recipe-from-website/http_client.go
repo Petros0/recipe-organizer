@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,13 +19,14 @@ func (s *HTTPClientStrategy) Name() string {
 	return "HTTP Client"
 }
 
-// CanRetry returns true if the error indicates bot protection (403/429)
+// CanRetry returns true if the error indicates bot protection (403/429) or no JSON-LD found
 func (s *HTTPClientStrategy) CanRetry(err error) bool {
 	if err == nil {
 		return false
 	}
 	errStr := err.Error()
-	return strings.Contains(errStr, "403") || strings.Contains(errStr, "429")
+	// Retry on bot protection (403/429) or when no JSON-LD is found
+	return strings.Contains(errStr, "403") || strings.Contains(errStr, "429") || errors.Is(err, ErrNoJSONLD)
 }
 
 // Fetch fetches HTML from URL and extracts Recipe JSON-LD using HTTP client
@@ -69,7 +71,17 @@ func (s *HTTPClientStrategy) Fetch(urlStr string) (*Recipe, error) {
 	}
 
 	// Extract recipe from HTML body
-	return extractRecipeFromHTML(string(body))
+	recipe, err := extractRecipeFromHTML(string(body))
+	if err != nil {
+		return nil, err
+	}
+
+	// If no recipe found, return ErrNoJSONLD so we can retry with Firecrawl
+	if recipe == nil {
+		return nil, ErrNoJSONLD
+	}
+
+	return recipe, nil
 }
 
 // setBrowserHeaders sets realistic browser headers to avoid bot detection

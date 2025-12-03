@@ -100,7 +100,11 @@ func (s *FirecrawlStrategy) fetchWithLLMExtraction(app *firecrawl.FirecrawlApp, 
 	jsonSchema := buildRecipeExtractionSchema()
 
 	// Create a prompt to help the LLM extract recipe data
-	prompt := "Extract the recipe information from this page including the recipe name, ingredients list, and cooking instructions."
+	prompt := `
+Extract the complete recipe data from this page.
+Focus on the main recipe content and ignore advertisements, related recipes, and sidebar content.
+Extract all available fields including image, instructions, times, servings, nutrition, and author information when present.
+`
 
 	// Use scrape with JSON extraction options (v2 SDK feature)
 	params := &firecrawl.ScrapeParams{
@@ -139,7 +143,7 @@ func buildRecipeExtractionSchema() map[string]any {
 			},
 			"image": map[string]any{
 				"type":        "string",
-				"description": "URL of the main recipe image",
+				"description": "URL of the recipe image (usually it is the thumbnail image)",
 			},
 			"prepTime": map[string]any{
 				"type":        "string",
