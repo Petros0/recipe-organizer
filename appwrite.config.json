@@ -50,7 +50,9 @@
             "logging": true,
             "runtime": "go-1.23",
             "scopes": [
-                "users.read"
+                "users.read",
+                "databases.write",
+                "documents.write"
             ],
             "events": [],
             "schedule": "",
@@ -93,7 +95,8 @@
                     "elements": [
                         "REQUESTED",
                         "IN_PROGRESS",
-                        "COMPLETED"
+                        "COMPLETED",
+                        "FAILED"
                     ],
                     "format": "enum",
                     "default": null
