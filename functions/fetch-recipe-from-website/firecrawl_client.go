@@ -151,7 +151,7 @@ func buildRecipeExtractionSchema() map[string]any {
 			},
 			"image": map[string]any{
 				"type":        "string",
-				"description": "URL of an overhead or close-up photo showing ONLY the finished dish with NO people, hands, arms, chefs, or faces visible. Must show just the food on a plate/bowl. NEVER select images with humans in them.",
+				"description": "URL of the recipe image (usually it is the thumbnail image)",
 			},
 			"prepTime": map[string]any{
 				"type":        "string",
