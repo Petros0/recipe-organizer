@@ -103,7 +103,15 @@ func (s *FirecrawlStrategy) fetchWithLLMExtraction(app *firecrawl.FirecrawlApp, 
 	prompt := `
 Extract the complete recipe data from this page.
 Focus on the main recipe content and ignore advertisements, related recipes, and sidebar content.
-Extract all available fields including image, instructions, times, servings, nutrition, and author information when present.
+
+CRITICAL - Image selection rules (in order of priority):
+1. BEST: A close-up overhead shot of ONLY the finished dish on a plate/bowl - no people visible at all
+2. ACCEPTABLE: A food-focused shot where the dish is the main subject
+3. REJECT: Any image showing a person, chef, hands, arms, faces, or human body parts holding or presenting food
+4. REJECT: Favicons, logos, avatars, icons, profile photos, or thumbnails smaller than 400px
+
+If multiple food images exist, choose the one showing ONLY the food without any people.
+Extract all available fields including instructions, times, servings, nutrition, and author information when present.
 `
 
 	// Use scrape with JSON extraction options (v2 SDK feature)
@@ -143,7 +151,7 @@ func buildRecipeExtractionSchema() map[string]any {
 			},
 			"image": map[string]any{
 				"type":        "string",
-				"description": "URL of the recipe image (usually it is the thumbnail image)",
+				"description": "URL of an overhead or close-up photo showing ONLY the finished dish with NO people, hands, arms, chefs, or faces visible. Must show just the food on a plate/bowl. NEVER select images with humans in them.",
 			},
 			"prepTime": map[string]any{
 				"type":        "string",

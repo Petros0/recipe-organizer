@@ -2,6 +2,7 @@ package handler
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -195,6 +196,29 @@ func TestFirecrawlStrategy_LLMExtraction(t *testing.T) {
 			if i < 3 { // Log first 3 instructions
 				t.Logf("  Step %d: %s...", i+1, truncate(inst.Text, 80))
 			}
+		}
+	}
+
+	// Check for image - should be a food image, not favicon/avatar
+	if len(recipe.Image) == 0 {
+		t.Error("Expected recipe image from LLM extraction")
+	} else {
+		imageURL := recipe.Image[0]
+		t.Logf("Recipe Image: %s", imageURL)
+
+		// Validate that the image is NOT a favicon, logo, or avatar
+		// These typically contain patterns like "favicon", "icon", "avatar", "logo"
+		invalidPatterns := []string{"favicon", "icon", "avatar", "logo", "profile"}
+		for _, pattern := range invalidPatterns {
+			if strings.Contains(strings.ToLower(imageURL), pattern) {
+				t.Errorf("Image URL appears to be a %s, not a food photo: %s", pattern, imageURL)
+			}
+		}
+
+		// The image should be a reasonably sized image (substackcdn images have dimensions in URL)
+		// or from a CDN that hosts content images
+		if !strings.Contains(imageURL, "substackcdn") && !strings.Contains(imageURL, "http") {
+			t.Logf("Warning: Image URL doesn't appear to be from expected CDN: %s", imageURL)
 		}
 	}
 
