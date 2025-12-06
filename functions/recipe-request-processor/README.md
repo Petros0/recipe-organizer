@@ -4,7 +4,7 @@ A Go-based Appwrite Cloud Function that processes recipe requests by fetching an
 
 ## Overview
 
-This function is triggered by a database event when a recipe request is created. It receives the document ID and URL, fetches the recipe using schema.org JSON-LD parsing with Firecrawl fallback, and updates the request status.
+This function is triggered by a database event when a recipe request is created. It receives the full document payload from Appwrite, extracts the URL, fetches the recipe using schema.org JSON-LD parsing with Firecrawl fallback, and updates the request status.
 
 ## Usage
 
@@ -20,16 +20,30 @@ Sample `200` Response:
 Pong
 ```
 
-### POST /
+### Event Trigger (Database Document Create)
 
-Process a recipe request (typically triggered by database event).
+This function is triggered by Appwrite database events when a document is created in the recipe requests collection.
 
-**Input (JSON Body)**
+**Configure in Appwrite Console:**
+
+Add this event trigger in Functions > Settings > Events:
+```
+databases.6930a343001607ad7cbd.collections.6930a34300165ad1d129.documents.*.create
+```
+
+**Event Payload (Request Body)**
+
+Appwrite sends the full document as the request body:
 
 ```json
 {
-  "documentId": "abc123xyz",
-  "url": "https://example.com/recipe"
+  "$id": "abc123xyz",
+  "$databaseId": "6930a343001607ad7cbd",
+  "$collectionId": "6930a34300165ad1d129",
+  "$createdAt": "2024-01-01T00:00:00.000+00:00",
+  "$updatedAt": "2024-01-01T00:00:00.000+00:00",
+  "url": "https://example.com/recipe",
+  "status": "REQUESTED"
 }
 ```
 
@@ -65,11 +79,19 @@ Sample `200` Response:
 }
 ```
 
+**Skip Response (when status is not REQUESTED)**
+
+```json
+{
+  "message": "Skipped: document status is IN_PROGRESS, not REQUESTED"
+}
+```
+
 **Error Responses**
 
 | Status | Condition                    |
 | ------ | ---------------------------- |
-| 400    | Missing documentId or url    |
+| 400    | Missing $id or url in payload|
 | 404    | No Recipe found on page      |
 | 500    | Failed to fetch/parse recipe |
 
@@ -101,7 +123,9 @@ This function is the second step in a two-step async workflow:
 ### Request Flow
 
 ```
-Event Trigger → Update Status (IN_PROGRESS)
+Database Event (document payload) → Check status == REQUESTED
+    ↓ (skip if not REQUESTED)
+Update Status (IN_PROGRESS)
     ↓
 HTTP Client → JSON-LD Parser
     ↓ (403/429 or no JSON-LD)

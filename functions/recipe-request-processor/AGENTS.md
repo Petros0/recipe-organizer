@@ -53,10 +53,16 @@ functions/recipe-request-processor/
 ### Core Types
 
 ```go
-// ProcessorRequestBody represents the request body for the processor
-type ProcessorRequestBody struct {
-    DocumentID string `json:"documentId"`
-    URL        string `json:"url"`
+// DocumentEventPayload represents the Appwrite document event payload
+// This is triggered by database events when a document is created/updated
+type DocumentEventPayload struct {
+    ID           string `json:"$id"`
+    DatabaseID   string `json:"$databaseId"`
+    CollectionID string `json:"$collectionId"`
+    CreatedAt    string `json:"$createdAt"`
+    UpdatedAt    string `json:"$updatedAt"`
+    URL          string `json:"url"`
+    Status       string `json:"status"`
 }
 
 // Recipe - Main response type (schema.org/Recipe)
@@ -88,15 +94,26 @@ Health check endpoint.
 
 **Response:** `200 OK` - `"Pong"`
 
-### POST /
+### Event Trigger (Database Document Create)
 
-Process a recipe request (triggered by database event).
+This function is triggered by Appwrite database events. Configure the function to listen for:
 
-**Input (JSON Body):**
+```
+databases.6930a343001607ad7cbd.collections.6930a34300165ad1d129.documents.*.create
+```
+
+**Event Payload (Request Body):**
+
+The full document is passed as JSON in the request body:
 ```json
 {
-  "documentId": "abc123xyz",
-  "url": "https://example.com/recipe"
+  "$id": "abc123xyz",
+  "$databaseId": "6930a343001607ad7cbd",
+  "$collectionId": "6930a34300165ad1d129",
+  "$createdAt": "2024-01-01T00:00:00.000+00:00",
+  "$updatedAt": "2024-01-01T00:00:00.000+00:00",
+  "url": "https://example.com/recipe",
+  "status": "REQUESTED"
 }
 ```
 
@@ -118,11 +135,18 @@ Process a recipe request (triggered by database event).
 }
 ```
 
+**Skip Response (Non-REQUESTED status):** `200 OK`
+```json
+{
+  "message": "Skipped: document status is IN_PROGRESS, not REQUESTED"
+}
+```
+
 **Error Responses:**
 
 | Status | Condition                     |
 | ------ | ----------------------------- |
-| 400    | Missing documentId or url     |
+| 400    | Missing $id or url in payload |
 | 404    | No Recipe found               |
 | 500    | Failed to fetch/parse recipe  |
 
@@ -146,7 +170,9 @@ This function is the second step in a two-step async workflow:
 ### Request Flow
 
 ```
-Event Trigger (documentId, url) → Update Status (IN_PROGRESS)
+Database Event (document payload) → Check status == REQUESTED
+    ↓ (skip if not REQUESTED)
+Update Status (IN_PROGRESS)
     ↓
 HTTP Client → JSON-LD Parser
     ↓ (403/429 or no JSON-LD)
@@ -282,22 +308,24 @@ require (
 ## Important Notes for Agents
 
 1. **Event-Triggered** - This function is triggered by database events, not direct API calls
-2. **Input Format** - Expects `documentId` and `url` in request body
-3. **No URL Validation** - URL validation is done by `recipe-request`, not here
-4. **No Request Creation** - Request records are created by `recipe-request`, not here
-5. **Status Tracking** - Updates status: IN_PROGRESS → COMPLETED/FAILED
-6. **Required Fields** - Recipe must have `name` and `image` to be valid (relaxed for LLM extraction)
-7. **JSON-LD Formats** - Handle single object, arrays, and `@graph` containers
-8. **Type Variations** - Check both `"Recipe"` and URLs like `"https://schema.org/Recipe"`
-9. **Image Formats** - Can be string, array of strings, or ImageObject with `url` property
-10. **Instructions Formats** - Handle both HowToStep and nested HowToSection
-11. **Author Formats** - Can be string, Person object, or array (takes first)
-12. **Bot Protection** - HTTP 403/429 triggers automatic Firecrawl fallback
-13. **LLM Extraction** - Used when JSON-LD is not found on the page
-14. **Timeout** - HTTP client: 30s, Firecrawl: API default
-15. **Pointer Types** - Optional fields use `*string` to distinguish empty from missing
-16. **Error Handling** - Return descriptive JSON errors with appropriate HTTP status codes
-17. **Cost Optimization** - HTTP client is tried first (free), Firecrawl only when needed
+2. **Input Format** - Receives full Appwrite document payload with `$id`, `url`, `status`, etc.
+3. **Status Filtering** - Only processes documents with `status: REQUESTED` to avoid infinite loops
+4. **No URL Validation** - URL validation is done by `recipe-request`, not here
+5. **No Request Creation** - Request records are created by `recipe-request`, not here
+6. **Status Tracking** - Updates status: IN_PROGRESS → COMPLETED/FAILED
+7. **Required Fields** - Recipe must have `name` and `image` to be valid (relaxed for LLM extraction)
+8. **JSON-LD Formats** - Handle single object, arrays, and `@graph` containers
+9. **Type Variations** - Check both `"Recipe"` and URLs like `"https://schema.org/Recipe"`
+10. **Image Formats** - Can be string, array of strings, or ImageObject with `url` property
+11. **Instructions Formats** - Handle both HowToStep and nested HowToSection
+12. **Author Formats** - Can be string, Person object, or array (takes first)
+13. **Bot Protection** - HTTP 403/429 triggers automatic Firecrawl fallback
+14. **LLM Extraction** - Used when JSON-LD is not found on the page
+15. **Timeout** - HTTP client: 30s, Firecrawl: API default
+16. **Pointer Types** - Optional fields use `*string` to distinguish empty from missing
+17. **Error Handling** - Return descriptive JSON errors with appropriate HTTP status codes
+18. **Cost Optimization** - HTTP client is tried first (free), Firecrawl only when needed
+19. **Event Configuration** - Configure in Appwrite Console: Functions > Settings > Events
 
 ## Limitations
 

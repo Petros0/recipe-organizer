@@ -110,4 +110,3 @@ func setBrowserHeaders(req *http.Request, targetURL string) {
 		req.Header.Set("Referer", baseURL)
 	}
 }
-

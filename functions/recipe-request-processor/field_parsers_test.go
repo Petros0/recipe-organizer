@@ -359,10 +359,10 @@ func TestParseNutrition(t *testing.T) {
 		{
 			name: "full nutrition info",
 			input: map[string]interface{}{
-				"@type":           "NutritionInformation",
-				"calories":        "250 kcal",
-				"proteinContent":  "10g",
-				"fatContent":      "15g",
+				"@type":               "NutritionInformation",
+				"calories":            "250 kcal",
+				"proteinContent":      "10g",
+				"fatContent":          "15g",
 				"carbohydrateContent": "30g",
 			},
 			wantCalories: "250 kcal",
@@ -426,4 +426,3 @@ func TestParseNutrition(t *testing.T) {
 		})
 	}
 }
-

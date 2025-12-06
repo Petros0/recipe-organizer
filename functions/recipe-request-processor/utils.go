@@ -46,4 +46,3 @@ func getStringArray(obj map[string]interface{}, key string) []string {
 
 	return result
 }
-

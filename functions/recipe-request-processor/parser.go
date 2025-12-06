@@ -165,4 +165,3 @@ func extractRecipeFromObject(obj map[string]interface{}) *Recipe {
 
 	return recipe
 }
-

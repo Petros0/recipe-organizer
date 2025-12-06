@@ -133,4 +133,3 @@ func parseNutrition(nutritionVal interface{}) *Nutrition {
 
 	return nutrition
 }
-

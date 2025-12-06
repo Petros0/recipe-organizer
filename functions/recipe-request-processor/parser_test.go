@@ -6,11 +6,11 @@ import (
 
 func TestExtractRecipeFromHTML(t *testing.T) {
 	tests := []struct {
-		name       string
-		html       string
-		wantName   string
-		wantNil    bool
-		wantErr    bool
+		name     string
+		html     string
+		wantName string
+		wantNil  bool
+		wantErr  bool
 	}{
 		{
 			name: "valid JSON-LD recipe",
@@ -245,14 +245,14 @@ func TestExtractRecipeFromObject(t *testing.T) {
 	strPtr := func(s string) *string { return &s }
 
 	tests := []struct {
-		name              string
-		obj               map[string]interface{}
-		wantNil           bool
-		wantName          string
-		wantImageCount    int
-		wantDescription   *string
-		wantIngredients   int
-		wantInstructions  int
+		name             string
+		obj              map[string]interface{}
+		wantNil          bool
+		wantName         string
+		wantImageCount   int
+		wantDescription  *string
+		wantIngredients  int
+		wantInstructions int
 	}{
 		{
 			name: "full recipe",
@@ -370,4 +370,3 @@ func TestExtractRecipeFromObject(t *testing.T) {
 		})
 	}
 }
-

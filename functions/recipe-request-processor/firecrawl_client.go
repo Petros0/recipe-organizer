@@ -335,4 +335,3 @@ func parseExtractedRecipe(data map[string]any) (*Recipe, error) {
 
 	return recipe, nil
 }
-

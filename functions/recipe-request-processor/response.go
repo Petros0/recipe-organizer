@@ -65,4 +65,3 @@ func flattenInstructions(instructions []RecipeInstruction) []string {
 
 	return result
 }
-

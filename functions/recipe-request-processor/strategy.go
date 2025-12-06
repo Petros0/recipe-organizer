@@ -50,4 +50,3 @@ func (e *StrategyExecutor) Execute(url string, logger func(...interface{})) (*Re
 
 	return nil, lastErr
 }
-

@@ -180,4 +180,3 @@ func TestToRecipeResponse(t *testing.T) {
 		})
 	}
 }
-

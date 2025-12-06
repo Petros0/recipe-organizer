@@ -80,4 +80,3 @@ type RecipeDetails struct {
 type RequestBody struct {
 	URL string `json:"url"`
 }
-
