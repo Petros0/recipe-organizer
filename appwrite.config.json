@@ -61,6 +61,26 @@
             "commands": "",
             "specification": "s-0.5vcpu-512mb",
             "path": "functions/fetch-recipe-from-website"
+        },
+        {
+            "$id": "recipe-request-processor",
+            "name": "recipe-request-processor",
+            "runtime": "go-1.23",
+            "specification": "s-0.5vcpu-512mb",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "users.read"
+            ],
+            "schedule": "",
+            "timeout": 15,
+            "enabled": true,
+            "logging": true,
+            "entrypoint": "main.go",
+            "commands": "",
+            "path": "functions/recipe-request-processor"
         }
     ],
     "tablesDB": [

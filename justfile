@@ -44,3 +44,25 @@ connect host port:
     @echo "Connecting device..."
     adb connect {{ host }}:{{ port }}
     @echo "Device connected successfully!"
+
+deploy-recipe-request:
+    @echo "Deploying function..."
+    appwrite functions create-deployment \
+        --function-id=fetch-recipe-from-website-v1 \
+        --entrypoint=main.go \
+        --code=functions/recipe-request --activate true
+    @echo "Function deployed successfully!"
+
+deploy-recipe-request-processor:
+    @echo "Deploying function..."
+    appwrite functions create-deployment \
+        --function-id=recipe-request-processor \
+        --entrypoint=main.go \
+        --code=functions/recipe-request-processor --activate true
+    @echo "Function deployed successfully!"
+
+deploy-all:
+    @echo "Deploying all functions..."
+    @just deploy-recipe-request
+    @just deploy-recipe-request-processor
+    @echo "All functions deployed successfully!"
