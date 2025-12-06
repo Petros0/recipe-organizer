@@ -17,7 +17,7 @@ dependencies:
   forui: ^0.16.0
   forui_assets: ^0.16.0
   intl: ^0.20.2
-  signals: ^6.2.0
+  signals: ^6.3.0
 
 dev_dependencies:
   bloc_test: ^10.0.0
