@@ -41,28 +41,6 @@
     },
     "functions": [
         {
-            "$id": "fetch-recipe-from-website-v1",
-            "execute": [
-                "any"
-            ],
-            "name": "fetch-recipe-from-website",
-            "enabled": true,
-            "logging": true,
-            "runtime": "go-1.23",
-            "scopes": [
-                "users.read",
-                "databases.write",
-                "documents.write"
-            ],
-            "events": [],
-            "schedule": "",
-            "timeout": 15,
-            "entrypoint": "main.go",
-            "commands": "",
-            "specification": "s-0.5vcpu-512mb",
-            "path": "functions/fetch-recipe-from-website"
-        },
-        {
             "$id": "recipe-request-processor",
             "name": "recipe-request-processor",
             "runtime": "go-1.23",
@@ -95,27 +73,7 @@
             "runtime": "go-1.23",
             "scopes": [
                 "databases.read",
-                "databases.write",
-                "policies.read",
-                "policies.write",
-                "archives.read",
-                "archives.write",
-                "restorations.read",
-                "restorations.write",
-                "tables.read",
-                "collections.read",
-                "tables.write",
-                "collections.write",
-                "columns.read",
-                "attributes.read",
-                "columns.write",
-                "attributes.write",
-                "indexes.read",
-                "indexes.write",
-                "rows.read",
-                "documents.read",
-                "rows.write",
-                "documents.write"
+                "databases.write"
             ],
             "events": [],
             "schedule": "",
