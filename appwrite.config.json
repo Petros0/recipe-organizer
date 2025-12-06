@@ -70,17 +70,60 @@
             "execute": [
                 "any"
             ],
-            "events": [],
+            "events": [
+                "databases.6930a343001607ad7cbd.collections.6930a34300165ad1d129.documents.*.create"
+            ],
             "scopes": [
                 "users.read"
             ],
             "schedule": "",
-            "timeout": 15,
+            "timeout": 300,
             "enabled": true,
             "logging": true,
             "entrypoint": "main.go",
             "commands": "",
             "path": "functions/recipe-request-processor"
+        },
+        {
+            "$id": "recipe-request",
+            "execute": [
+                "any"
+            ],
+            "name": "recipe-request",
+            "enabled": true,
+            "logging": true,
+            "runtime": "go-1.23",
+            "scopes": [
+                "databases.read",
+                "databases.write",
+                "policies.read",
+                "policies.write",
+                "archives.read",
+                "archives.write",
+                "restorations.read",
+                "restorations.write",
+                "tables.read",
+                "collections.read",
+                "tables.write",
+                "collections.write",
+                "columns.read",
+                "attributes.read",
+                "columns.write",
+                "attributes.write",
+                "indexes.read",
+                "indexes.write",
+                "rows.read",
+                "documents.read",
+                "rows.write",
+                "documents.write"
+            ],
+            "events": [],
+            "schedule": "",
+            "timeout": 15,
+            "entrypoint": "main.go",
+            "commands": "",
+            "specification": "s-0.5vcpu-512mb",
+            "path": "functions/recipe-request"
         }
     ],
     "tablesDB": [

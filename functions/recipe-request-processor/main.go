@@ -66,7 +66,7 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	if err := requestClient.UpdateStatus(payload.ID, StatusInProgress); err != nil {
 		Context.Error(fmt.Sprintf("Error updating status to IN_PROGRESS: %v", err))
 		return Context.Res.Json(ErrorResponse{
-			Error: fmt.Sprintf("Error updating status to IN_PROGRESS: %v", err),
+			Error: "Error updating status to IN_PROGRESS",
 		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
 
@@ -89,12 +89,12 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		if updateErr := requestClient.UpdateStatus(payload.ID, StatusFailed); updateErr != nil {
 			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
 			return Context.Res.Json(ErrorResponse{
-				Error: fmt.Sprintf("Error updating status to FAILED: %v", updateErr),
+				Error: "Error updating status to FAILED",
 			}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 		}
 
 		return Context.Res.Json(ErrorResponse{
-			Error: fmt.Sprintf("Failed to fetch recipe: %v", err),
+			Error: "Failed to fetch recipe",
 		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
 
@@ -103,7 +103,7 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		if updateErr := requestClient.UpdateStatus(payload.ID, StatusFailed); updateErr != nil {
 			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
 			return Context.Res.Json(ErrorResponse{
-				Error: fmt.Sprintf("Error updating status to FAILED: %v", updateErr),
+				Error: "Error updating status to FAILED",
 			}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 		}
 		return Context.Res.Json(ErrorResponse{
@@ -115,7 +115,7 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	if err := requestClient.UpdateStatus(payload.ID, StatusCompleted); err != nil {
 		Context.Error(fmt.Sprintf("Error updating status to COMPLETED: %v", err))
 		return Context.Res.Json(ErrorResponse{
-			Error: fmt.Sprintf("Error updating status to COMPLETED: %v", err),
+			Error: "Error updating status to COMPLETED",
 		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
 

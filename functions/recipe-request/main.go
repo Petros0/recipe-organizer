@@ -53,7 +53,7 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	if err != nil {
 		Context.Error(fmt.Sprintf("Error creating request record: %v", err))
 		return Context.Res.Json(ErrorResponse{
-			Error: fmt.Sprintf("Error creating request record: %v", err),
+			Error: "Error creating request record",
 		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
 
