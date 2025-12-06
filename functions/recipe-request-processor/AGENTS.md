@@ -4,10 +4,12 @@ This document provides guidance for AI agents working on this Appwrite Cloud Fun
 
 ## Overview
 
-**recipe-request-processor** is a Go-based Appwrite Cloud Function that extracts structured recipe data from any website. It uses a multi-layered approach:
+**recipe-request-processor** is a Go-based Appwrite Cloud Function that processes recipe requests by extracting structured recipe data from websites. It uses a multi-layered approach:
 1. First tries parsing schema.org Recipe JSON-LD markup via HTTP
 2. Falls back to Firecrawl API for bot-protected sites
 3. Uses Firecrawl's LLM extraction for sites without JSON-LD structured data
+
+This function is triggered by a database event when `recipe-request` creates a new request record.
 
 ## Tech Stack
 
@@ -51,6 +53,12 @@ functions/recipe-request-processor/
 ### Core Types
 
 ```go
+// ProcessorRequestBody represents the request body for the processor
+type ProcessorRequestBody struct {
+    DocumentID string `json:"documentId"`
+    URL        string `json:"url"`
+}
+
 // Recipe - Main response type (schema.org/Recipe)
 type Recipe struct {
     Name               string              // Required
@@ -70,35 +78,6 @@ type Recipe struct {
     DatePublished      *string
     DateModified       *string
 }
-
-// Person - Author information
-type Person struct {
-    Type string
-    Name string
-    URL  string
-}
-
-// Nutrition - Nutritional information
-type Nutrition struct {
-    Calories            *string
-    FatContent          *string
-    SaturatedFatContent *string
-    CholesterolContent  *string
-    SodiumContent       *string
-    CarbohydrateContent *string
-    FiberContent        *string
-    SugarContent        *string
-    ProteinContent      *string
-}
-
-// RecipeInstruction - HowToStep or HowToSection
-type RecipeInstruction struct {
-    Type            string
-    Text            string
-    Name            string
-    URL             string
-    ItemListElement []RecipeInstruction // Nested for HowToSection
-}
 ```
 
 ## API Endpoints
@@ -109,18 +88,14 @@ Health check endpoint.
 
 **Response:** `200 OK` - `"Pong"`
 
-### GET, POST /
+### POST /
 
-Extract recipe from URL.
-
-**Input (Query Parameter):**
-```
-?url=https://example.com/recipe
-```
+Process a recipe request (triggered by database event).
 
 **Input (JSON Body):**
 ```json
 {
+  "documentId": "abc123xyz",
   "url": "https://example.com/recipe"
 }
 ```
@@ -147,20 +122,39 @@ Extract recipe from URL.
 
 | Status | Condition                     |
 | ------ | ----------------------------- |
-| 400    | Missing or invalid URL        |
-| 404    | No Recipe JSON-LD found       |
+| 400    | Missing documentId or url     |
+| 404    | No Recipe found               |
 | 500    | Failed to fetch/parse recipe  |
 
 ## Architecture
 
+### Two-Step Async Workflow
+
+This function is the second step in a two-step async workflow:
+
+1. **recipe-request**
+   - Validates URL format
+   - Creates request record with REQUESTED status
+   - Returns document ID immediately
+
+2. **recipe-request-processor** (this function)
+   - Triggered by database create event
+   - Updates status to IN_PROGRESS
+   - Fetches recipe using HTTP/Firecrawl
+   - Updates status to COMPLETED/FAILED
+
 ### Request Flow
 
 ```
-Request → URL Validation → Create Request Record → HTTP Client → JSON-LD Parser → Update Status → Response
-                                                      ↓ (403/429)
-                                                 Firecrawl (HTML) → JSON-LD Parser
-                                                      ↓ (no JSON-LD found)
-                                                 Firecrawl (LLM Extract) → Recipe Schema → Response
+Event Trigger (documentId, url) → Update Status (IN_PROGRESS)
+    ↓
+HTTP Client → JSON-LD Parser
+    ↓ (403/429 or no JSON-LD)
+Firecrawl (HTML) → JSON-LD Parser
+    ↓ (no JSON-LD found)
+Firecrawl (LLM Extract) → Recipe Schema
+    ↓
+Update Status (COMPLETED/FAILED) → Response
 ```
 
 ### Strategy Pattern
@@ -187,6 +181,7 @@ The function uses a strategy pattern with automatic fallback:
 | `parseNutrition`               | Parse NutritionInformation                   |
 | `fetchWithLLMExtraction`       | AI-based recipe extraction for sites without JSON-LD |
 | `NewRecipeRequestClient`       | Create Appwrite client for status tracking   |
+| `UpdateStatus`                 | Update request status in Appwrite            |
 | `toRecipeResponse`             | Transform Recipe to API response format      |
 
 ### Extraction Strategies
@@ -214,7 +209,6 @@ The function uses a cost-optimized hybrid approach:
 | `TestFetchRecipe_Integration`       | Integration | Live recipe fetching (skipped short) |
 | `TestFirecrawlStrategy_HTMLWithJSONLD` | Integration | Firecrawl HTML parsing            |
 | `TestFirecrawlStrategy_LLMExtraction`  | Integration | Firecrawl LLM extraction          |
-| `TestRecipeRequestClient_Integration`  | Integration | Appwrite client operations        |
 
 ### Running Tests
 
@@ -239,11 +233,6 @@ go test -v -run TestExtractRecipeFromHTML ./...
 ## Common Commands
 
 ```bash
-# Run the function locally (requires Appwrite CLI)
-appwrite functions createExecution \
-  --functionId=<function-id> \
-  --body='{"url":"https://example.com/recipe"}'
-
 # Build
 go build -o build/handler .
 
@@ -292,19 +281,23 @@ require (
 
 ## Important Notes for Agents
 
-1. **Required Fields** - Recipe must have `name` and `image` to be valid (relaxed for LLM extraction)
-2. **JSON-LD Formats** - Handle single object, arrays, and `@graph` containers
-3. **Type Variations** - Check both `"Recipe"` and URLs like `"https://schema.org/Recipe"`
-4. **Image Formats** - Can be string, array of strings, or ImageObject with `url` property
-5. **Instructions Formats** - Handle both HowToStep and nested HowToSection
-6. **Author Formats** - Can be string, Person object, or array (takes first)
-7. **Bot Protection** - HTTP 403/429 triggers automatic Firecrawl fallback
-8. **LLM Extraction** - Used when JSON-LD is not found on the page
-9. **Timeout** - HTTP client: 30s, Firecrawl: API default
-10. **Pointer Types** - Optional fields use `*string` to distinguish empty from missing
-11. **Error Handling** - Return descriptive JSON errors with appropriate HTTP status codes
-12. **Cost Optimization** - HTTP client is tried first (free), Firecrawl only when needed
-13. **Status Tracking** - Request status tracked in Appwrite (REQUESTED → IN_PROGRESS → COMPLETED/FAILED)
+1. **Event-Triggered** - This function is triggered by database events, not direct API calls
+2. **Input Format** - Expects `documentId` and `url` in request body
+3. **No URL Validation** - URL validation is done by `recipe-request`, not here
+4. **No Request Creation** - Request records are created by `recipe-request`, not here
+5. **Status Tracking** - Updates status: IN_PROGRESS → COMPLETED/FAILED
+6. **Required Fields** - Recipe must have `name` and `image` to be valid (relaxed for LLM extraction)
+7. **JSON-LD Formats** - Handle single object, arrays, and `@graph` containers
+8. **Type Variations** - Check both `"Recipe"` and URLs like `"https://schema.org/Recipe"`
+9. **Image Formats** - Can be string, array of strings, or ImageObject with `url` property
+10. **Instructions Formats** - Handle both HowToStep and nested HowToSection
+11. **Author Formats** - Can be string, Person object, or array (takes first)
+12. **Bot Protection** - HTTP 403/429 triggers automatic Firecrawl fallback
+13. **LLM Extraction** - Used when JSON-LD is not found on the page
+14. **Timeout** - HTTP client: 30s, Firecrawl: API default
+15. **Pointer Types** - Optional fields use `*string` to distinguish empty from missing
+16. **Error Handling** - Return descriptive JSON errors with appropriate HTTP status codes
+17. **Cost Optimization** - HTTP client is tried first (free), Firecrawl only when needed
 
 ## Limitations
 
@@ -314,4 +307,3 @@ require (
 - Some recipe fields may be empty if not provided by source site
 - Requires `FIRECRAWL_API_KEY` environment variable for fallback
 - Requires `APPWRITE_API_KEY` for status tracking
-

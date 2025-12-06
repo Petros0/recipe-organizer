@@ -5,7 +5,6 @@ import (
 
 	"github.com/appwrite/sdk-for-go/client"
 	"github.com/appwrite/sdk-for-go/databases"
-	"github.com/appwrite/sdk-for-go/id"
 )
 
 // Status constants for recipe request tracking
@@ -26,7 +25,6 @@ const (
 
 // RecipeRequestStore defines the interface for recipe request operations
 type RecipeRequestStore interface {
-	CreateRequest(url string) (string, error)
 	UpdateStatus(documentID, status string) error
 }
 
@@ -59,26 +57,6 @@ func NewRecipeRequestClient() *RecipeRequestClient {
 	}
 }
 
-// CreateRequest creates a new recipe request record with REQUESTED status
-func (c *RecipeRequestClient) CreateRequest(url string) (string, error) {
-	data := map[string]interface{}{
-		"url":    url,
-		"status": StatusRequested,
-	}
-
-	doc, err := c.databases.CreateDocument(
-		DatabaseID,
-		CollectionID,
-		id.Unique(),
-		data,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	return doc.Id, nil
-}
-
 // UpdateStatus updates the status of an existing recipe request
 func (c *RecipeRequestClient) UpdateStatus(documentID, status string) error {
 	data := map[string]interface{}{
@@ -93,4 +71,3 @@ func (c *RecipeRequestClient) UpdateStatus(documentID, status string) error {
 	)
 	return err
 }
-

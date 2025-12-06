@@ -1,8 +1,12 @@
 # recipe-request-processor
 
-A Go-based Appwrite Cloud Function that extracts structured recipe data from any website using schema.org JSON-LD parsing with Firecrawl fallback for bot-protected sites.
+A Go-based Appwrite Cloud Function that processes recipe requests by fetching and extracting structured recipe data from websites.
 
-## 🧰 Usage
+## Overview
+
+This function is triggered by a database event when a recipe request is created. It receives the document ID and URL, fetches the recipe using schema.org JSON-LD parsing with Firecrawl fallback, and updates the request status.
+
+## Usage
 
 ### GET /ping
 
@@ -16,20 +20,15 @@ Sample `200` Response:
 Pong
 ```
 
-### GET, POST /
+### POST /
 
-Extract recipe data from a URL.
-
-**Input (Query Parameter)**
-
-```
-?url=https://example.com/recipe
-```
+Process a recipe request (typically triggered by database event).
 
 **Input (JSON Body)**
 
 ```json
 {
+  "documentId": "abc123xyz",
   "url": "https://example.com/recipe"
 }
 ```
@@ -70,11 +69,11 @@ Sample `200` Response:
 
 | Status | Condition                    |
 | ------ | ---------------------------- |
-| 400    | Missing or invalid URL       |
+| 400    | Missing documentId or url    |
 | 404    | No Recipe found on page      |
 | 500    | Failed to fetch/parse recipe |
 
-## ⚙️ Configuration
+## Configuration
 
 | Setting           | Value     |
 | ----------------- | --------- |
@@ -83,7 +82,7 @@ Sample `200` Response:
 | Permissions       | `any`     |
 | Timeout (Seconds) | 15        |
 
-## 🔒 Environment Variables
+## Environment Variables
 
 | Variable            | Required | Description                      |
 | ------------------- | -------- | -------------------------------- |
@@ -92,20 +91,17 @@ Sample `200` Response:
 | `APPWRITE_ENDPOINT` | No       | Custom Appwrite endpoint         |
 | `APPWRITE_PROJECT_ID` | No     | Custom Appwrite project ID       |
 
-## 🏗️ Architecture
+## Architecture
 
-The function uses a strategy pattern with automatic fallback:
+This function is the second step in a two-step async workflow:
 
-1. **HTTP Client Strategy** - Fast, free HTTP requests with browser headers (~80% success rate)
-2. **Firecrawl HTML Strategy** - Handles bot-protected sites, parses JSON-LD
-3. **Firecrawl LLM Extraction** - AI-based extraction for sites without structured data
+1. **recipe-request** - Validates URL, creates request record, returns document ID immediately
+2. **recipe-request-processor** (this function) - Fetches recipe and updates status
 
 ### Request Flow
 
 ```
-Request → URL Validation → Create Request Record (REQUESTED)
-    ↓
-Update Status (IN_PROGRESS)
+Event Trigger → Update Status (IN_PROGRESS)
     ↓
 HTTP Client → JSON-LD Parser
     ↓ (403/429 or no JSON-LD)
@@ -116,7 +112,15 @@ Firecrawl (LLM Extract) → Recipe Schema
 Update Status (COMPLETED/FAILED) → Response
 ```
 
-## 🧪 Testing
+### Extraction Strategies
+
+The function uses a cost-optimized hybrid approach:
+
+1. **HTTP Client** - Free, works for ~80% of recipe sites
+2. **Firecrawl HTML** - Handles bot protection, parses JSON-LD (1 credit)
+3. **Firecrawl LLM Extract** - AI extraction for sites without structured data (higher cost)
+
+## Testing
 
 ```bash
 # Run unit tests only
@@ -129,7 +133,7 @@ go test -v ./...
 go test -v -run TestExtractRecipeFromHTML ./...
 ```
 
-## 📦 Dependencies
+## Dependencies
 
 - `github.com/open-runtimes/types-for-go/v4` - Appwrite runtime types
 - `github.com/PuerkitoBio/goquery` - HTML parsing

@@ -4,10 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 )
+
+// ProcessorRequestBody represents the request body for the processor
+// This is typically triggered by an Appwrite event when a recipe request is created
+type ProcessorRequestBody struct {
+	DocumentID string `json:"documentId"`
+	URL        string `json:"url"`
+}
 
 // This Appwrite function will be executed every time your function is triggered
 func Main(Context openruntimes.Context) openruntimes.Response {
@@ -16,56 +22,41 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		return Context.Res.Text("Pong")
 	}
 
-	// Extract URL from request
-	var targetURL string
-
-	// Try to get URL from query parameter first
-	if urlParam, ok := Context.Req.Query["url"]; ok && urlParam != "" {
-		targetURL = urlParam
-	} else if bodyText := Context.Req.BodyText(); bodyText != "" {
-		// Try to parse JSON body
-		var body RequestBody
-		if err := json.Unmarshal([]byte(bodyText), &body); err == nil && body.URL != "" {
-			targetURL = body.URL
+	// Parse request body - expects documentId and url from event trigger
+	var body ProcessorRequestBody
+	if bodyText := Context.Req.BodyText(); bodyText != "" {
+		if err := json.Unmarshal([]byte(bodyText), &body); err != nil {
+			return Context.Res.Json(ErrorResponse{
+				Error: fmt.Sprintf("Invalid request body: %v", err),
+			}, Context.Res.WithStatusCode(http.StatusBadRequest))
 		}
 	}
 
-	// Validate URL
-	if targetURL == "" {
+	// Validate required fields
+	if body.DocumentID == "" {
 		return Context.Res.Json(ErrorResponse{
-			Error: "URL parameter is required. Provide 'url' as query parameter or in JSON body.",
+			Error: "documentId is required in request body",
 		}, Context.Res.WithStatusCode(http.StatusBadRequest))
 	}
 
-	// Validate URL format
-	parsedURL, err := url.Parse(targetURL)
-	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+	if body.URL == "" {
 		return Context.Res.Json(ErrorResponse{
-			Error: fmt.Sprintf("Invalid URL format: %s", targetURL),
+			Error: "url is required in request body",
 		}, Context.Res.WithStatusCode(http.StatusBadRequest))
 	}
 
 	// Initialize recipe request client for tracking
 	requestClient := NewRecipeRequestClient()
 
-	// Create request record with REQUESTED status
-	documentID, err := requestClient.CreateRequest(targetURL)
-	if err != nil {
-		Context.Error(fmt.Sprintf("Error creating request record: %v", err))
-		return Context.Res.Json(ErrorResponse{
-			Error: fmt.Sprintf("Error creating request record: %v", err),
-		}, Context.Res.WithStatusCode(http.StatusBadRequest))
-	}
-
-	Context.Log(fmt.Sprintf("Created request record: %s", documentID))
-
 	// Update status to IN_PROGRESS before fetching
-	if err := requestClient.UpdateStatus(documentID, StatusInProgress); err != nil {
+	if err := requestClient.UpdateStatus(body.DocumentID, StatusInProgress); err != nil {
 		Context.Error(fmt.Sprintf("Error updating status to IN_PROGRESS: %v", err))
 		return Context.Res.Json(ErrorResponse{
 			Error: fmt.Sprintf("Error updating status to IN_PROGRESS: %v", err),
-		}, Context.Res.WithStatusCode(http.StatusBadRequest))
+		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
+
+	Context.Log(fmt.Sprintf("Processing request %s for URL: %s", body.DocumentID, body.URL))
 
 	// Create strategy executor with HTTP client first, then Firecrawl as fallback
 	// Firecrawl handles bot protection and can use LLM extraction if no JSON-LD is found
@@ -75,17 +66,17 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	)
 
 	// Fetch recipe using the strategy executor
-	Context.Log(fmt.Sprintf("Fetching recipe from: %s", targetURL))
-	recipe, err := executor.Execute(targetURL, Context.Log)
+	Context.Log(fmt.Sprintf("Fetching recipe from: %s", body.URL))
+	recipe, err := executor.Execute(body.URL, Context.Log)
 
 	if err != nil {
 		Context.Error(fmt.Sprintf("Error fetching recipe: %v", err))
 		// Update status to FAILED
-		if updateErr := requestClient.UpdateStatus(documentID, StatusFailed); updateErr != nil {
+		if updateErr := requestClient.UpdateStatus(body.DocumentID, StatusFailed); updateErr != nil {
 			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
 			return Context.Res.Json(ErrorResponse{
 				Error: fmt.Sprintf("Error updating status to FAILED: %v", updateErr),
-			}, Context.Res.WithStatusCode(http.StatusBadRequest))
+			}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 		}
 
 		return Context.Res.Json(ErrorResponse{
@@ -95,11 +86,11 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 
 	if recipe == nil {
 		// Update status to FAILED when no recipe found
-		if updateErr := requestClient.UpdateStatus(documentID, StatusFailed); updateErr != nil {
+		if updateErr := requestClient.UpdateStatus(body.DocumentID, StatusFailed); updateErr != nil {
 			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
 			return Context.Res.Json(ErrorResponse{
 				Error: fmt.Sprintf("Error updating status to FAILED: %v", updateErr),
-			}, Context.Res.WithStatusCode(http.StatusBadRequest))
+			}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 		}
 		return Context.Res.Json(ErrorResponse{
 			Error: "No Recipe structured data found on the page",
@@ -107,13 +98,12 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	}
 
 	// Update status to COMPLETED on success
-
-	if err := requestClient.UpdateStatus(documentID, StatusCompleted); err != nil {
+	if err := requestClient.UpdateStatus(body.DocumentID, StatusCompleted); err != nil {
 		Context.Error(fmt.Sprintf("Error updating status to COMPLETED: %v", err))
 		return Context.Res.Json(ErrorResponse{
 			Error: fmt.Sprintf("Error updating status to COMPLETED: %v", err),
-		}, Context.Res.WithStatusCode(http.StatusBadRequest))
+		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
 
-	return Context.Res.Json(toRecipeResponse(targetURL, recipe))
+	return Context.Res.Json(toRecipeResponse(body.URL, recipe))
 }

@@ -10,10 +10,7 @@ import (
 
 // Status constants for recipe request tracking
 const (
-	StatusRequested  = "REQUESTED"
-	StatusInProgress = "IN_PROGRESS"
-	StatusCompleted  = "COMPLETED"
-	StatusFailed     = "FAILED"
+	StatusRequested = "REQUESTED"
 )
 
 // Default Appwrite configuration
@@ -27,7 +24,6 @@ const (
 // RecipeRequestStore defines the interface for recipe request operations
 type RecipeRequestStore interface {
 	CreateRequest(url string) (string, error)
-	UpdateStatus(documentID, status string) error
 }
 
 // RecipeRequestClient handles database operations for recipe requests
@@ -78,19 +74,3 @@ func (c *RecipeRequestClient) CreateRequest(url string) (string, error) {
 
 	return doc.Id, nil
 }
-
-// UpdateStatus updates the status of an existing recipe request
-func (c *RecipeRequestClient) UpdateStatus(documentID, status string) error {
-	data := map[string]interface{}{
-		"status": status,
-	}
-
-	_, err := c.databases.UpdateDocument(
-		DatabaseID,
-		CollectionID,
-		documentID,
-		c.databases.WithUpdateDocumentData(data),
-	)
-	return err
-}
-

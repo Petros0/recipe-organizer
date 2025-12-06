@@ -9,7 +9,7 @@ import (
 	"github.com/open-runtimes/types-for-go/v4/openruntimes"
 )
 
-// This Appwrite function will be executed every time your function is triggered
+// Main is the Appwrite function entry point
 func Main(Context openruntimes.Context) openruntimes.Response {
 	// Handle ping endpoint
 	if Context.Req.Path == "/ping" {
@@ -45,7 +45,7 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		}, Context.Res.WithStatusCode(http.StatusBadRequest))
 	}
 
-	// Initialize recipe request client for tracking
+	// Initialize recipe request client
 	requestClient := NewRecipeRequestClient()
 
 	// Create request record with REQUESTED status
@@ -54,66 +54,15 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		Context.Error(fmt.Sprintf("Error creating request record: %v", err))
 		return Context.Res.Json(ErrorResponse{
 			Error: fmt.Sprintf("Error creating request record: %v", err),
-		}, Context.Res.WithStatusCode(http.StatusBadRequest))
-	}
-
-	Context.Log(fmt.Sprintf("Created request record: %s", documentID))
-
-	// Update status to IN_PROGRESS before fetching
-	if err := requestClient.UpdateStatus(documentID, StatusInProgress); err != nil {
-		Context.Error(fmt.Sprintf("Error updating status to IN_PROGRESS: %v", err))
-		return Context.Res.Json(ErrorResponse{
-			Error: fmt.Sprintf("Error updating status to IN_PROGRESS: %v", err),
-		}, Context.Res.WithStatusCode(http.StatusBadRequest))
-	}
-
-	// Create strategy executor with HTTP client first, then Firecrawl as fallback
-	// Firecrawl handles bot protection and can use LLM extraction if no JSON-LD is found
-	executor := NewStrategyExecutor(
-		&HTTPClientStrategy{},
-		NewFirecrawlStrategy(),
-	)
-
-	// Fetch recipe using the strategy executor
-	Context.Log(fmt.Sprintf("Fetching recipe from: %s", targetURL))
-	recipe, err := executor.Execute(targetURL, Context.Log)
-
-	if err != nil {
-		Context.Error(fmt.Sprintf("Error fetching recipe: %v", err))
-		// Update status to FAILED
-		if updateErr := requestClient.UpdateStatus(documentID, StatusFailed); updateErr != nil {
-			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
-			return Context.Res.Json(ErrorResponse{
-				Error: fmt.Sprintf("Error updating status to FAILED: %v", updateErr),
-			}, Context.Res.WithStatusCode(http.StatusBadRequest))
-		}
-
-		return Context.Res.Json(ErrorResponse{
-			Error: fmt.Sprintf("Failed to fetch recipe: %v", err),
 		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
 
-	if recipe == nil {
-		// Update status to FAILED when no recipe found
-		if updateErr := requestClient.UpdateStatus(documentID, StatusFailed); updateErr != nil {
-			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
-			return Context.Res.Json(ErrorResponse{
-				Error: fmt.Sprintf("Error updating status to FAILED: %v", updateErr),
-			}, Context.Res.WithStatusCode(http.StatusBadRequest))
-		}
-		return Context.Res.Json(ErrorResponse{
-			Error: "No Recipe structured data found on the page",
-		}, Context.Res.WithStatusCode(http.StatusNotFound))
-	}
+	Context.Log(fmt.Sprintf("Created request record: %s for URL: %s", documentID, targetURL))
 
-	// Update status to COMPLETED on success
-
-	if err := requestClient.UpdateStatus(documentID, StatusCompleted); err != nil {
-		Context.Error(fmt.Sprintf("Error updating status to COMPLETED: %v", err))
-		return Context.Res.Json(ErrorResponse{
-			Error: fmt.Sprintf("Error updating status to COMPLETED: %v", err),
-		}, Context.Res.WithStatusCode(http.StatusBadRequest))
-	}
-
-	return Context.Res.Json(toRecipeResponse(targetURL, recipe))
+	// Return success response with document ID
+	return Context.Res.Json(SuccessResponse{
+		DocumentID: documentID,
+		Status:     StatusRequested,
+		URL:        targetURL,
+	})
 }
