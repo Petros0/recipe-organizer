@@ -8,52 +8,13 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// ParserLogFunc is a function type for parser logging
-type ParserLogFunc func(string)
-
-// parserLogger is used for internal logging within parser
-var parserLogger ParserLogFunc
-
-// SetParserLogger sets the logger for parser functions
-func SetParserLogger(logger ParserLogFunc) {
-	parserLogger = logger
-}
-
-func logParser(msg string) {
-	if parserLogger != nil {
-		parserLogger("[Parser] " + msg)
-	}
-}
-
 // extractRecipeFromHTML extracts Recipe JSON-LD from HTML content
 func extractRecipeFromHTML(htmlContent string) (*Recipe, error) {
-	// Log HTML content info for debugging
-	logParser(fmt.Sprintf("HTML content length: %d bytes", len(htmlContent)))
-
-	// Check if HTML contains script tags at all
-	if strings.Contains(htmlContent, "<script") {
-		logParser("HTML contains <script> tags")
-	} else {
-		logParser("WARNING: HTML does NOT contain any <script> tags")
-	}
-
-	// Check if HTML contains JSON-LD specifically
-	if strings.Contains(htmlContent, "application/ld+json") {
-		logParser("HTML contains application/ld+json reference")
-	} else {
-		logParser("WARNING: HTML does NOT contain application/ld+json")
-	}
-
 	// Parse HTML with goquery
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
-
-	// Count all script tags
-	allScripts := doc.Find("script").Length()
-	jsonLDScripts := doc.Find("script[type='application/ld+json']").Length()
-	logParser(fmt.Sprintf("Found %d total script tags, %d JSON-LD scripts", allScripts, jsonLDScripts))
 
 	// Find all JSON-LD script tags
 	var recipe *Recipe
@@ -64,24 +25,17 @@ func extractRecipeFromHTML(htmlContent string) (*Recipe, error) {
 
 		jsonLD := s.Text()
 		if jsonLD == "" {
-			logParser(fmt.Sprintf("JSON-LD script #%d is empty", i))
 			return
 		}
-
-		logParser(fmt.Sprintf("JSON-LD script #%d length: %d bytes", i, len(jsonLD)))
 
 		// Try to parse as single object or array
 		var data interface{}
 		if err := json.Unmarshal([]byte(jsonLD), &data); err != nil {
-			logParser(fmt.Sprintf("JSON-LD script #%d parse error: %v", i, err))
 			return // Skip invalid JSON
 		}
 
 		// Handle different JSON-LD formats
 		recipe = extractRecipeFromJSONLD(data)
-		if recipe != nil {
-			logParser(fmt.Sprintf("Found Recipe in JSON-LD script #%d: %s", i, recipe.Name))
-		}
 	})
 
 	return recipe, nil

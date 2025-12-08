@@ -100,7 +100,7 @@ func (s *FirecrawlStrategy) Fetch(url string) (*Recipe, error) {
 func (s *FirecrawlStrategy) fetchWithHTML(app *firecrawl.FirecrawlApp, url string) (*Recipe, error) {
 	// Request HTML format
 	params := &firecrawl.ScrapeParams{
-		Formats: []string{"html"},
+		Formats: []string{"rawHtml"},
 	}
 
 	result, err := app.ScrapeURL(url, params)
@@ -113,7 +113,7 @@ func (s *FirecrawlStrategy) fetchWithHTML(app *firecrawl.FirecrawlApp, url strin
 	}
 
 	// Extract recipe from HTML
-	recipe, err := extractRecipeFromHTML(result.HTML)
+	recipe, err := extractRecipeFromHTML(result.RawHTML)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
