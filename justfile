@@ -48,7 +48,7 @@ connect host port:
 deploy-recipe-request:
     @echo "Deploying function..."
     appwrite functions create-deployment \
-        --function-id=fetch-recipe-from-website-v1 \
+        --function-id=recipe-request \
         --entrypoint=main.go \
         --code=functions/recipe-request --activate true
     @echo "Function deployed successfully!"
