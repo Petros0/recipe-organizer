@@ -108,6 +108,37 @@ func parseAuthor(authorVal interface{}) *Person {
 	return author
 }
 
+// parseStringOrArray parses a field that can be either a string or array of strings
+// This is useful for fields like recipeCategory and recipeCuisine which can be either format
+func parseStringOrArray(val interface{}) []string {
+	if val == nil {
+		return nil
+	}
+
+	var result []string
+
+	switch v := val.(type) {
+	case string:
+		if v != "" {
+			result = append(result, v)
+		}
+	case []interface{}:
+		for _, item := range v {
+			if str, ok := item.(string); ok && str != "" {
+				result = append(result, str)
+			}
+		}
+	case []string:
+		for _, str := range v {
+			if str != "" {
+				result = append(result, str)
+			}
+		}
+	}
+
+	return result
+}
+
 // parseNutrition parses nutrition field
 func parseNutrition(nutritionVal interface{}) *Nutrition {
 	if nutritionVal == nil {

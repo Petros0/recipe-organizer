@@ -112,14 +112,14 @@ func recipeToMap(requestID string, recipe *Recipe) map[string]interface{} {
 	if recipe.TotalTime != nil {
 		data["total_time"] = *recipe.TotalTime
 	}
-	if recipe.RecipeYield != nil {
-		data["recipe_yield"] = *recipe.RecipeYield
+	if len(recipe.RecipeYield) > 0 {
+		data["recipe_yield"] = recipe.RecipeYield
 	}
-	if recipe.RecipeCategory != nil {
-		data["recipe_category"] = *recipe.RecipeCategory
+	if len(recipe.RecipeCategory) > 0 {
+		data["recipe_category"] = recipe.RecipeCategory
 	}
-	if recipe.RecipeCuisine != nil {
-		data["recipe_cuisine"] = *recipe.RecipeCuisine
+	if len(recipe.RecipeCuisine) > 0 {
+		data["recipe_cuisine"] = recipe.RecipeCuisine
 	}
 	if recipe.Keywords != nil {
 		data["keywords"] = *recipe.Keywords

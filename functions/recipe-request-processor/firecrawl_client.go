@@ -197,8 +197,9 @@ func buildRecipeExtractionSchema() map[string]any {
 				"description": "Total time (e.g., '45 minutes' or 'PT45M')",
 			},
 			"recipeYield": map[string]any{
-				"type":        "string",
-				"description": "Number of servings or yield (e.g., '4 servings')",
+				"type":        "array",
+				"items":       map[string]string{"type": "string"},
+				"description": "Number of servings or yield (e.g., '4 servings', '12 cookies')",
 			},
 			"recipeIngredient": map[string]any{
 				"type":        "array",
@@ -218,12 +219,14 @@ func buildRecipeExtractionSchema() map[string]any {
 				"description": "Author or creator of the recipe",
 			},
 			"recipeCategory": map[string]any{
-				"type":        "string",
-				"description": "Category (e.g., 'Dessert', 'Main Course')",
+				"type":        "array",
+				"items":       map[string]string{"type": "string"},
+				"description": "Category/categories (e.g., 'Dessert', 'Main Course')",
 			},
 			"recipeCuisine": map[string]any{
-				"type":        "string",
-				"description": "Cuisine type (e.g., 'Italian', 'Mexican')",
+				"type":        "array",
+				"items":       map[string]string{"type": "string"},
+				"description": "Cuisine type(s) (e.g., 'Italian', 'Mexican')",
 			},
 			"nutrition": map[string]any{
 				"type": "object",
@@ -248,12 +251,12 @@ type ExtractedRecipe struct {
 	PrepTime           string             `json:"prepTime"`
 	CookTime           string             `json:"cookTime"`
 	TotalTime          string             `json:"totalTime"`
-	RecipeYield        string             `json:"recipeYield"`
+	RecipeYield        []string           `json:"recipeYield"`
 	RecipeIngredient   []string           `json:"recipeIngredient"`
 	RecipeInstructions []string           `json:"recipeInstructions"`
 	Author             string             `json:"author"`
-	RecipeCategory     string             `json:"recipeCategory"`
-	RecipeCuisine      string             `json:"recipeCuisine"`
+	RecipeCategory     []string           `json:"recipeCategory"`
+	RecipeCuisine      []string           `json:"recipeCuisine"`
 	Nutrition          ExtractedNutrition `json:"nutrition"`
 }
 
@@ -312,14 +315,14 @@ func parseExtractedRecipe(data map[string]any) (*Recipe, error) {
 	if extracted.TotalTime != "" {
 		recipe.TotalTime = &extracted.TotalTime
 	}
-	if extracted.RecipeYield != "" {
-		recipe.RecipeYield = &extracted.RecipeYield
+	if len(extracted.RecipeYield) > 0 {
+		recipe.RecipeYield = extracted.RecipeYield
 	}
-	if extracted.RecipeCategory != "" {
-		recipe.RecipeCategory = &extracted.RecipeCategory
+	if len(extracted.RecipeCategory) > 0 {
+		recipe.RecipeCategory = extracted.RecipeCategory
 	}
-	if extracted.RecipeCuisine != "" {
-		recipe.RecipeCuisine = &extracted.RecipeCuisine
+	if len(extracted.RecipeCuisine) > 0 {
+		recipe.RecipeCuisine = extracted.RecipeCuisine
 	}
 
 	// Set ingredients

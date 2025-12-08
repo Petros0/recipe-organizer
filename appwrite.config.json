@@ -199,7 +199,7 @@
                     "key": "recipe_yield",
                     "type": "string",
                     "required": false,
-                    "array": false,
+                    "array": true,
                     "size": 128,
                     "default": null
                 },
@@ -207,7 +207,7 @@
                     "key": "recipe_category",
                     "type": "string",
                     "required": false,
-                    "array": false,
+                    "array": true,
                     "size": 256,
                     "default": null
                 },
@@ -215,7 +215,7 @@
                     "key": "recipe_cuisine",
                     "type": "string",
                     "required": false,
-                    "array": false,
+                    "array": true,
                     "size": 256,
                     "default": null
                 },

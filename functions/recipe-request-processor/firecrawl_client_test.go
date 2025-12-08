@@ -42,6 +42,14 @@ func TestFirecrawlStrategy_RawHTMLWithJSONLD(t *testing.T) {
 			wantNutrition:     true,
 			invalidImageParts: []string{"star", "icon", "logo", "avatar", ".svg"},
 		},
+		{
+			name:              "plantyou.com recipe - marry me chickpeas",
+			url:               "https://plantyou.com/marry-me-chickpeas/",
+			wantGreekName:     false, // English site
+			wantCorrectImage:  true,
+			wantNutrition:     true,
+			invalidImageParts: []string{"icon", "logo", "avatar", ".svg"},
+		},
 	}
 
 	strategy := NewFirecrawlStrategy()
@@ -140,6 +148,16 @@ func TestFirecrawlStrategy_RawHTMLWithJSONLD(t *testing.T) {
 				if tt.wantGreekName && containsGreekCharacters(recipe.Author.Name) {
 					t.Log("✓ Author name contains Greek characters")
 				}
+			}
+
+			// Check recipeCategory (array field)
+			if len(recipe.RecipeCategory) > 0 {
+				t.Logf("Recipe Categories: %v", recipe.RecipeCategory)
+			}
+
+			// Check recipeCuisine (array field)
+			if len(recipe.RecipeCuisine) > 0 {
+				t.Logf("Recipe Cuisines: %v", recipe.RecipeCuisine)
 			}
 		})
 	}

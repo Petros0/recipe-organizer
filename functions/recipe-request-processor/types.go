@@ -11,11 +11,11 @@ type Recipe struct {
 	PrepTime           *string             `json:"prepTime,omitempty"`
 	CookTime           *string             `json:"cookTime,omitempty"`
 	TotalTime          *string             `json:"totalTime,omitempty"`
-	RecipeYield        *string             `json:"recipeYield,omitempty"`
+	RecipeYield        []string            `json:"recipeYield,omitempty"`
 	RecipeIngredient   []string            `json:"recipeIngredient,omitempty"`
 	RecipeInstructions []RecipeInstruction `json:"recipeInstructions,omitempty"`
-	RecipeCategory     *string             `json:"recipeCategory,omitempty"`
-	RecipeCuisine      *string             `json:"recipeCuisine,omitempty"`
+	RecipeCategory     []string            `json:"recipeCategory,omitempty"`
+	RecipeCuisine      []string            `json:"recipeCuisine,omitempty"`
 	Nutrition          *Nutrition          `json:"nutrition,omitempty"`
 	Keywords           *string             `json:"keywords,omitempty"`
 	DatePublished      *string             `json:"datePublished,omitempty"`

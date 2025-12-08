@@ -124,13 +124,13 @@ func extractRecipeFromObject(obj map[string]interface{}) *Recipe {
 	if totalTime := getStringPtr(obj, "totalTime"); totalTime != nil {
 		recipe.TotalTime = totalTime
 	}
-	if yield := getStringPtr(obj, "recipeYield"); yield != nil {
+	if yield := parseStringOrArray(obj["recipeYield"]); len(yield) > 0 {
 		recipe.RecipeYield = yield
 	}
-	if category := getStringPtr(obj, "recipeCategory"); category != nil {
+	if category := parseStringOrArray(obj["recipeCategory"]); len(category) > 0 {
 		recipe.RecipeCategory = category
 	}
-	if cuisine := getStringPtr(obj, "recipeCuisine"); cuisine != nil {
+	if cuisine := parseStringOrArray(obj["recipeCuisine"]); len(cuisine) > 0 {
 		recipe.RecipeCuisine = cuisine
 	}
 	if keywords := getStringPtr(obj, "keywords"); keywords != nil {

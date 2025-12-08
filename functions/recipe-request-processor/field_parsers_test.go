@@ -426,3 +426,73 @@ func TestParseNutrition(t *testing.T) {
 		})
 	}
 }
+
+func TestParseStringOrArray(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    interface{}
+		expected []string
+	}{
+		{
+			name:     "single string",
+			input:    "Main Course",
+			expected: []string{"Main Course"},
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: nil,
+		},
+		{
+			name:     "nil input",
+			input:    nil,
+			expected: nil,
+		},
+		{
+			name:     "array of strings (interface)",
+			input:    []interface{}{"Main Course", "Dinner"},
+			expected: []string{"Main Course", "Dinner"},
+		},
+		{
+			name:     "array of strings (typed)",
+			input:    []string{"Italian", "Mediterranean"},
+			expected: []string{"Italian", "Mediterranean"},
+		},
+		{
+			name:     "array with empty strings filtered",
+			input:    []interface{}{"Main Course", "", "Dinner"},
+			expected: []string{"Main Course", "Dinner"},
+		},
+		{
+			name:     "array with only empty strings",
+			input:    []interface{}{"", ""},
+			expected: nil,
+		},
+		{
+			name:     "single item array",
+			input:    []interface{}{"Dessert"},
+			expected: []string{"Dessert"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parseStringOrArray(tt.input)
+
+			if len(tt.expected) == 0 && len(result) == 0 {
+				return // Both nil/empty, OK
+			}
+
+			if len(result) != len(tt.expected) {
+				t.Errorf("Length mismatch: got %d, want %d", len(result), len(tt.expected))
+				return
+			}
+
+			for i, v := range result {
+				if v != tt.expected[i] {
+					t.Errorf("Index %d: got %q, want %q", i, v, tt.expected[i])
+				}
+			}
+		})
+	}
+}
