@@ -72,6 +72,11 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 
 	Context.Log(fmt.Sprintf("Processing request %s for URL: %s", payload.ID, payload.URL))
 
+	// Set up Firecrawl logger for detailed extraction logging
+	SetFirecrawlLogger(func(msgs ...interface{}) {
+		Context.Log(msgs...)
+	})
+
 	// Create strategy executor with HTTP client first, then Firecrawl as fallback
 	// Firecrawl handles bot protection and can use LLM extraction if no JSON-LD is found
 	executor := NewStrategyExecutor(
