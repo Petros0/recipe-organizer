@@ -111,6 +111,20 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		}, Context.Res.WithStatusCode(http.StatusNotFound))
 	}
 
+	// Save recipe to database
+	recipeID, err := requestClient.CreateRecipe(payload.ID, recipe)
+	if err != nil {
+		Context.Error(fmt.Sprintf("Error saving recipe to database: %v", err))
+		// Update status to FAILED since we couldn't save
+		if updateErr := requestClient.UpdateStatus(payload.ID, StatusFailed); updateErr != nil {
+			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
+		}
+		return Context.Res.Json(ErrorResponse{
+			Error: "Failed to save recipe to database",
+		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
+	}
+	Context.Log(fmt.Sprintf("Recipe saved with ID: %s", recipeID))
+
 	// Update status to COMPLETED on success
 	if err := requestClient.UpdateStatus(payload.ID, StatusCompleted); err != nil {
 		Context.Error(fmt.Sprintf("Error updating status to COMPLETED: %v", err))
