@@ -3,13 +3,16 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recipe_organizer/app/app.dart';
-import 'package:recipe_organizer/counter/counter.dart';
+import 'package:recipe_organizer/core/di.dart';
+import 'package:recipe_organizer/features/home/home.dart';
 
 void main() {
   group('App', () {
-    testWidgets('renders CounterPage', (tester) async {
+    setUpAll(configureDependencies);
+
+    testWidgets('renders HomePage', (tester) async {
       await tester.pumpWidget(App());
-      expect(find.byType(CounterPage), findsOneWidget);
+      expect(find.byType(HomePage), findsOneWidget);
     });
   });
 }

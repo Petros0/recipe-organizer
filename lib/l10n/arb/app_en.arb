@@ -3,5 +3,41 @@
     "counterAppBarTitle": "Counter",
     "@counterAppBarTitle": {
         "description": "Text shown in the AppBar of the Counter Page"
+    },
+    "homeTitle": "My Recipes",
+    "@homeTitle": {
+        "description": "Title shown in the AppBar of the Home Page"
+    },
+    "emptyStateTitle": "No recipes yet",
+    "@emptyStateTitle": {
+        "description": "Title shown when the recipe list is empty"
+    },
+    "emptyStateDescription": "Import your first recipe from any website to get started",
+    "@emptyStateDescription": {
+        "description": "Description shown when the recipe list is empty"
+    },
+    "importRecipeButton": "Import Recipe",
+    "@importRecipeButton": {
+        "description": "Text for the import recipe button"
+    },
+    "importDialogTitle": "Import Recipe",
+    "@importDialogTitle": {
+        "description": "Title of the import recipe dialog"
+    },
+    "importDialogDescription": "Paste the URL of a recipe page to import it",
+    "@importDialogDescription": {
+        "description": "Description in the import recipe dialog"
+    },
+    "urlLabel": "Recipe URL",
+    "@urlLabel": {
+        "description": "Label for the URL input field"
+    },
+    "cancelButton": "Cancel",
+    "@cancelButton": {
+        "description": "Text for the cancel button"
+    },
+    "importButton": "Import",
+    "@importButton": {
+        "description": "Text for the import button"
     }
 }

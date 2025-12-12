@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
-import 'package:recipe_organizer/counter/view/counter_page.dart';
+import 'package:recipe_organizer/features/home/home.dart';
 import 'package:recipe_organizer/l10n/l10n.dart';
 
 class App extends StatelessWidget {
@@ -14,7 +14,7 @@ class App extends StatelessWidget {
       builder: (_, child) => FAnimatedTheme(data: theme, child: child!),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const CounterPage(),
+      home: const HomePage(),
     );
   }
 }
