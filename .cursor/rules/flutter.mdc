@@ -132,6 +132,51 @@ class _CounterWidgetState extends State<CounterWidget> with SignalsMixin {
 }
 ```
 
+#### Dependency Injection
+
+Try to use [get_it](https://pub.dev/packages/get_it) for dependency injection.
+
+Usage:
+
+```
+import 'package:get_it/get_it.dart';
+
+// Create a global instance (or use GetIt.instance)
+final getIt = GetIt.instance;
+
+// 1. Define your services
+class ApiClient {
+  Future<void> fetchData() async { /* ... */ }
+}
+
+class UserRepository {
+  final ApiClient apiClient;
+  UserRepository(this.apiClient);
+}
+
+// 2. Register them at app startup
+void configureDependencies() {
+  getIt.registerSingleton<ApiClient>(ApiClient());
+  getIt.registerLazySingleton<UserRepository>(
+    () => UserRepository(getIt<ApiClient>())
+  );
+}
+
+// 3. Access from anywhere in your app
+class MyHomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () {
+        // No BuildContext passing needed!
+        getIt<UserRepository>().apiClient.fetchData();
+      },
+      child: Text('Fetch Data'),
+    );
+  }
+}
+```
+
 #### UI and Compoments
 
 Use [forUI](https://forui.dev/docs) for reusable widgets and theming.

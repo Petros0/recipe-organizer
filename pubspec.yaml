@@ -8,6 +8,7 @@ environment:
   flutter: ^3.35.0
 
 dependencies:
+  appwrite: 20.3.2
   bloc: ^9.0.1
   flutter:
     sdk: flutter
@@ -16,6 +17,7 @@ dependencies:
     sdk: flutter
   forui: ^0.16.0
   forui_assets: ^0.16.0
+  get_it: ^8.0.3
   intl: ^0.20.2
   signals: ^6.2.0
 

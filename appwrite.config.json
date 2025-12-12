@@ -144,24 +144,8 @@
                     "relationType": "oneToOne",
                     "twoWay": false,
                     "twoWayKey": "6930a5310026f555d41a",
-                    "onDelete": "restrict",
+                    "onDelete": "cascade",
                     "side": "parent"
-                },
-                {
-                    "key": "name",
-                    "type": "string",
-                    "required": true,
-                    "array": false,
-                    "size": 512,
-                    "default": null
-                },
-                {
-                    "key": "description",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 10000,
-                    "default": null
                 },
                 {
                     "key": "image",
@@ -169,102 +153,6 @@
                     "required": false,
                     "array": true,
                     "format": "url",
-                    "default": null
-                },
-                {
-                    "key": "prep_time",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 64,
-                    "default": null
-                },
-                {
-                    "key": "cook_time",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 64,
-                    "default": null
-                },
-                {
-                    "key": "total_time",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 64,
-                    "default": null
-                },
-                {
-                    "key": "recipe_yield",
-                    "type": "string",
-                    "required": false,
-                    "array": true,
-                    "size": 128,
-                    "default": null
-                },
-                {
-                    "key": "recipe_category",
-                    "type": "string",
-                    "required": false,
-                    "array": true,
-                    "size": 256,
-                    "default": null
-                },
-                {
-                    "key": "recipe_cuisine",
-                    "type": "string",
-                    "required": false,
-                    "array": true,
-                    "size": 256,
-                    "default": null
-                },
-                {
-                    "key": "keywords",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "date_published",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 64,
-                    "default": null
-                },
-                {
-                    "key": "date_modified",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 64,
-                    "default": null
-                },
-                {
-                    "key": "ingredients",
-                    "type": "string",
-                    "required": false,
-                    "array": true,
-                    "size": 1024,
-                    "default": null
-                },
-                {
-                    "key": "instructions",
-                    "type": "string",
-                    "required": false,
-                    "array": true,
-                    "size": 4096,
-                    "default": null
-                },
-                {
-                    "key": "author_name",
-                    "type": "string",
-                    "required": false,
-                    "array": false,
-                    "size": 256,
                     "default": null
                 },
                 {
@@ -276,12 +164,139 @@
                     "default": null
                 },
                 {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 512,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "prep_time",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "cook_time",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "total_time",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "recipe_yield",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 128,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "recipe_category",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 256,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "recipe_cuisine",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 256,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "keywords",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1024,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "date_published",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "date_modified",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "ingredients",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 1024,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "instructions",
+                    "type": "string",
+                    "required": false,
+                    "array": true,
+                    "size": 4096,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "author_name",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 256,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
                     "key": "nutrition_calories",
                     "type": "string",
                     "required": false,
                     "array": false,
                     "size": 64,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "nutrition_fat",
@@ -289,7 +304,8 @@
                     "required": false,
                     "array": false,
                     "size": 64,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "nutrition_saturated_fat",
@@ -297,7 +313,8 @@
                     "required": false,
                     "array": false,
                     "size": 64,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "nutrition_cholesterol",
@@ -305,7 +322,8 @@
                     "required": false,
                     "array": false,
                     "size": 64,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "nutrition_sodium",
@@ -313,7 +331,8 @@
                     "required": false,
                     "array": false,
                     "size": 64,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "nutrition_carbohydrate",
@@ -321,7 +340,8 @@
                     "required": false,
                     "array": false,
                     "size": 64,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "nutrition_fiber",
@@ -329,7 +349,8 @@
                     "required": false,
                     "array": false,
                     "size": 64,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "nutrition_sugar",
@@ -337,7 +358,8 @@
                     "required": false,
                     "array": false,
                     "size": 64,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 },
                 {
                     "key": "nutrition_protein",
@@ -345,7 +367,8 @@
                     "required": false,
                     "array": false,
                     "size": 64,
-                    "default": null
+                    "default": null,
+                    "encrypt": false
                 }
             ],
             "indexes": []

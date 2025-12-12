@@ -21,7 +21,7 @@ This document provides guidance for AI agents working on this codebase.
 
 ### Supported Platforms
 
-iOS, Android, Web, Windows
+iOS, Android
 
 ## Project Structure
 
@@ -62,9 +62,11 @@ test/
   helpers/                  # Test utilities and pump_app
 
 functions/
-  fetch-recipe-from-website/  # Go function for recipe extraction
-    main.go                   # Appwrite function handler
-    main_test.go              # Function tests
+  # Go functions for recipe extraction
+  recipe-request/
+    main.go                   
+  recipe-request-processor/
+    main.go
 ```
 
 ## Architecture Patterns
@@ -93,6 +95,8 @@ class _FeaturePageState extends State<FeaturePage> with SignalsMixin {
 ```
 
 ### UI Components with forUI
+
+IMPORTANT: Always first make sure that a component doesn't exist with [forUI](https://forui.dev/) before implementing it by yourself.
 
 Use `FThemes` for theming and forUI widgets for consistent UI:
 
@@ -254,7 +258,7 @@ bloc_test: ^10.0.0
 1. **Prefer Signals over Bloc** for new state management
 2. **Use forUI components** for UI consistency
 3. **Follow the feature structure** when adding new features
-4. **Run `dart fix --apply`** after making changes
+4. **Run `just format`** after making changes
 5. **Keep widgets shallow** - extract components to avoid deep nesting
 6. **Use const constructors** to minimize rebuilds
 7. **Add translations** for all user-facing strings
