@@ -1,3 +1,4 @@
+export 'data/recipe_request_repository.dart';
 export 'model/recipe.dart';
 export 'state/home_controller.dart';
 export 'view/home_page.dart';

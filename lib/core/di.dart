@@ -14,10 +14,27 @@ void configureDependencies() {
         ..setProject('691f8b990030db50617a')
         ..setEndpoint('https://fra.cloud.appwrite.io/v1'),
     )
+    ..registerLazySingleton<Functions>(() {
+      final client = getIt<Client>();
+      return Functions(client);
+    })
     // Auth feature
-    ..registerLazySingleton<AuthRepository>(() => AuthRepository(account: Account(getIt<Client>())))
-    ..registerLazySingleton<AuthService>(() => AuthService(repository: getIt<AuthRepository>()))
-    ..registerLazySingleton<AuthController>(() => AuthController(service: getIt<AuthService>()))
+    ..registerLazySingleton<AuthRepository>(() {
+      final client = getIt<Client>();
+      return AuthRepository(account: Account(client));
+    })
+    ..registerLazySingleton<AuthService>(() {
+      final authRepository = getIt<AuthRepository>();
+      return AuthService(repository: authRepository);
+    })
+    ..registerLazySingleton<AuthController>(() {
+      final authService = getIt<AuthService>();
+      return AuthController(service: authService);
+    })
     // Home feature
-    ..registerLazySingleton<HomeController>(HomeController.new);
+    ..registerLazySingleton<HomeController>(HomeController.new)
+    ..registerLazySingleton<RecipeRequestRepository>(() {
+      final functions = getIt<Functions>();
+      return RecipeRequestRepository(functions);
+    });
 }
