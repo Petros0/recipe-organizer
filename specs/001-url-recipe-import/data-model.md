@@ -100,19 +100,19 @@ Embedded value object for nutritional data.
 
 ```
                     ┌──────────────┐
-User submits URL ──►│  REQUESTED   │
+User submits URL ──►│  requested   │
                     └──────┬───────┘
                            │ Function triggered
                            ▼
                     ┌──────────────┐
-                    │ IN_PROGRESS  │
+                    │  inProgress  │
                     └──────┬───────┘
                            │
               ┌────────────┼────────────┐
               │                         │
               ▼                         ▼
        ┌──────────────┐         ┌──────────────┐
-       │  COMPLETED   │         │    FAILED    │
+       │  completed   │         │    failed    │
        └──────────────┘         └──────────────┘
               │
               ▼

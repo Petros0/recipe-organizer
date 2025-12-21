@@ -16,6 +16,14 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		return Context.Res.Text("Pong")
 	}
 
+	// Extract user ID from header
+	userID := Context.Req.Headers["x-appwrite-user-id"]
+	if userID == "" {
+		return Context.Res.Json(ErrorResponse{
+			Error: "x-appwrite-user-id header is required",
+		}, Context.Res.WithStatusCode(http.StatusUnauthorized))
+	}
+
 	// Extract URL from request
 	var targetURL string
 
@@ -49,7 +57,7 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	requestClient := NewRecipeRequestClient()
 
 	// Create request record with REQUESTED status
-	documentID, err := requestClient.CreateRequest(targetURL)
+	documentID, err := requestClient.CreateRequest(targetURL, userID)
 	if err != nil {
 		Context.Error(fmt.Sprintf("Error creating request record: %v", err))
 		return Context.Res.Json(ErrorResponse{

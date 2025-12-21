@@ -43,9 +43,10 @@ class RecipeCard extends StatelessWidget {
   }
 
   Widget _buildImage(FThemeData theme) {
-    if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
+    final imageUrl = recipe.imageUrl;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
       return Image.network(
-        recipe.imageUrl!,
+        imageUrl,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => _buildPlaceholder(theme),
         loadingBuilder: (context, child, loadingProgress) {
@@ -118,10 +119,10 @@ class RecipeCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          if (recipe.author != null) ...[
+          if (recipe.authorName != null) ...[
             const SizedBox(height: 4),
             Text(
-              recipe.author!,
+              recipe.authorName!,
               style: theme.typography.sm.copyWith(
                 color: Colors.white70,
               ),

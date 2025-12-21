@@ -82,13 +82,16 @@ As a user, I want imported recipes to retain attribution to the original source 
 
 ### Edge Cases
 
+**Deferred to post-MVP:**
 - What happens when the URL points to a non-recipe page (e.g., homepage, category listing)?
 - How does the system handle websites with aggressive bot protection that block the headless browser?
 - What happens when a recipe page contains multiple recipes (e.g., main dish with side dish)?
 - How does the system handle non-English recipe websites?
-- What happens when the user submits a malformed or invalid URL?
 - How does the system handle very long recipes with 50+ ingredients or steps?
 - What happens when recipe images are blocked or CDN-protected?
+
+**Handled in MVP:**
+- What happens when the user submits a malformed or invalid URL? → FR-002 validates URL format; error shown via FR-010/FR-018.
 
 ## Requirements *(mandatory)*
 
@@ -98,10 +101,10 @@ As a user, I want imported recipes to retain attribution to the original source 
 - **FR-002**: System MUST validate that the submitted URL is well-formed before processing.
 - **FR-003**: System MUST attempt to extract recipe data using schema.org Recipe JSON-LD as the primary method.
 - **FR-004**: System MUST fall back to LLM-based extraction when schema.org data is not available.
-- **FR-005**: System MUST extract the following recipe fields when available: name, image(s), ingredients list, instructions/steps, prep time, cook time, total time, servings/yield, nutrition information, and author/source.
+- **FR-005**: System MUST extract the following recipe fields when available: name, image(s), ingredients list, instructions/steps, prep time, cook time, total time, servings/yield, nutrition information, and author/source. **Required fields**: name, ingredients list (minimum 1 ingredient). All other fields are optional.
 - **FR-006**: System MUST handle websites with bot protection by using a headless browser with appropriate headers.
 - **FR-007**: System MUST display extracted recipe data for user review before saving.
-- **FR-008**: System MUST allow users to edit extracted data before saving.
+- **FR-008**: System MUST allow users to edit extracted data before saving. Note: Editing is available in LLM fallback flow (US2) and partial import flow (US3). US1 preview is read-only with option to proceed to edit if needed.
 - **FR-009**: System MUST preserve the original source URL and author attribution with saved recipes.
 - **FR-010**: System MUST provide clear, user-friendly error messages when extraction fails.
 - **FR-011**: System MUST indicate which fields could not be extracted (partial success scenario).
@@ -125,7 +128,7 @@ As a user, I want imported recipes to retain attribution to the original source 
 
 ### Measurable Outcomes
 
-- **SC-001**: Users can successfully import a recipe from a URL in under 30 seconds for sites with structured data.
+- **SC-001**: Users can successfully import a recipe from a URL in under 30 seconds for sites with structured data (tested on 4G mobile network, mid-tier device).
 - **SC-002**: 95% of major recipe websites with schema.org markup result in complete recipe extraction.
 - **SC-003**: 80% of recipe pages without structured data are successfully parsed via LLM fallback.
 - **SC-004**: Users can complete the full import flow (paste URL → review → save) in under 2 minutes.

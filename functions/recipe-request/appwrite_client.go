@@ -6,6 +6,8 @@ import (
 	"github.com/appwrite/sdk-for-go/client"
 	"github.com/appwrite/sdk-for-go/databases"
 	"github.com/appwrite/sdk-for-go/id"
+	"github.com/appwrite/sdk-for-go/permission"
+	"github.com/appwrite/sdk-for-go/role"
 )
 
 // Status constants for recipe request tracking
@@ -23,7 +25,7 @@ const (
 
 // RecipeRequestStore defines the interface for recipe request operations
 type RecipeRequestStore interface {
-	CreateRequest(url string) (string, error)
+	CreateRequest(url, userID string) (string, error)
 }
 
 // RecipeRequestClient handles database operations for recipe requests
@@ -56,10 +58,18 @@ func NewRecipeRequestClient() *RecipeRequestClient {
 }
 
 // CreateRequest creates a new recipe request record with REQUESTED status
-func (c *RecipeRequestClient) CreateRequest(url string) (string, error) {
+func (c *RecipeRequestClient) CreateRequest(url, userID string) (string, error) {
 	data := map[string]interface{}{
-		"url":    url,
-		"status": StatusRequested,
+		"url":     url,
+		"status":  StatusRequested,
+		"user_id": userID,
+	}
+
+	// Set permissions to allow only the user who created the request to read it
+	permissions := []string{
+		permission.Read(role.User(userID, "")),
+		permission.Update(role.User(userID, "")),
+		permission.Delete(role.User(userID, "")),
 	}
 
 	doc, err := c.databases.CreateDocument(
@@ -67,6 +77,7 @@ func (c *RecipeRequestClient) CreateRequest(url string) (string, error) {
 		CollectionID,
 		id.Unique(),
 		data,
+		c.databases.WithCreateDocumentPermissions(permissions),
 	)
 	if err != nil {
 		return "", err

@@ -1,5 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:get_it/get_it.dart';
+import 'package:recipe_organizer/core/appwrite/appwrite_constants.dart';
+import 'package:recipe_organizer/core/appwrite/realtime_service.dart';
 import 'package:recipe_organizer/features/auth/auth.dart';
 import 'package:recipe_organizer/features/home/home.dart';
 
@@ -11,12 +13,24 @@ void configureDependencies() {
   getIt
     ..registerLazySingleton<Client>(
       () => Client()
-        ..setProject('691f8b990030db50617a')
-        ..setEndpoint('https://fra.cloud.appwrite.io/v1'),
+        ..setProject(AppwriteConstants.projectId)
+        ..setEndpoint(AppwriteConstants.endpoint),
     )
     ..registerLazySingleton<Functions>(() {
       final client = getIt<Client>();
       return Functions(client);
+    })
+    ..registerLazySingleton<Databases>(() {
+      final client = getIt<Client>();
+      return Databases(client);
+    })
+    ..registerLazySingleton<Realtime>(() {
+      final client = getIt<Client>();
+      return Realtime(client);
+    })
+    ..registerLazySingleton<RealtimeService>(() {
+      final realtime = getIt<Realtime>();
+      return RealtimeService(realtime);
     })
     // Auth feature
     ..registerLazySingleton<AuthRepository>(() {
@@ -32,9 +46,26 @@ void configureDependencies() {
       return AuthController(service: authService);
     })
     // Home feature
-    ..registerLazySingleton<HomeController>(HomeController.new)
     ..registerLazySingleton<RecipeRequestRepository>(() {
       final functions = getIt<Functions>();
       return RecipeRequestRepository(functions);
+    })
+    ..registerLazySingleton<RecipeRepository>(() {
+      final databases = getIt<Databases>();
+      return RecipeRepository(databases);
+    })
+    ..registerLazySingleton<RecipeImportService>(() {
+      final requestRepo = getIt<RecipeRequestRepository>();
+      final recipeRepo = getIt<RecipeRepository>();
+      final realtimeService = getIt<RealtimeService>();
+      return RecipeImportService(
+        requestRepository: requestRepo,
+        recipeRepository: recipeRepo,
+        realtimeService: realtimeService,
+      );
+    })
+    ..registerLazySingleton<HomeController>(() {
+      final importService = getIt<RecipeImportService>();
+      return HomeController(importService: importService);
     });
 }

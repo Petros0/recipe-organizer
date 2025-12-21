@@ -39,5 +39,89 @@
     "importButton": "Import",
     "@importButton": {
         "description": "Text for the import button"
+    },
+    "extractingRecipe": "Extracting recipe...",
+    "@extractingRecipe": {
+        "description": "Message shown while extracting recipe from URL"
+    },
+    "extractingRecipeLlm": "Analyzing page content...",
+    "@extractingRecipeLlm": {
+        "description": "Message shown when LLM extraction is in progress"
+    },
+    "importFailed": "Import failed",
+    "@importFailed": {
+        "description": "Title for failed import error"
+    },
+    "importFailedRetry": "Tap to retry",
+    "@importFailedRetry": {
+        "description": "Retry hint for failed import"
+    },
+    "retryButton": "Retry",
+    "@retryButton": {
+        "description": "Text for retry button"
+    },
+    "recipePreviewTitle": "Recipe Preview",
+    "@recipePreviewTitle": {
+        "description": "Title for recipe preview page"
+    },
+    "saveToCollection": "Save to Collection",
+    "@saveToCollection": {
+        "description": "Button text to save recipe"
+    },
+    "prepTime": "Prep",
+    "@prepTime": {
+        "description": "Label for preparation time"
+    },
+    "cookTime": "Cook",
+    "@cookTime": {
+        "description": "Label for cooking time"
+    },
+    "servings": "Servings",
+    "@servings": {
+        "description": "Label for servings/yield"
+    },
+    "ingredients": "Ingredients",
+    "@ingredients": {
+        "description": "Section header for ingredients"
+    },
+    "instructions": "Instructions",
+    "@instructions": {
+        "description": "Section header for instructions"
+    },
+    "source": "Source",
+    "@source": {
+        "description": "Label for recipe source attribution"
+    },
+    "invalidUrl": "Please enter a valid URL",
+    "@invalidUrl": {
+        "description": "Error message for invalid URL"
+    },
+    "invalidUrlFormat": "URL must start with http:// or https://",
+    "@invalidUrlFormat": {
+        "description": "Error message for URL format validation"
+    },
+    "errorUnableToAccess": "Unable to access this website",
+    "@errorUnableToAccess": {
+        "description": "Error when website cannot be accessed"
+    },
+    "errorNoRecipeFound": "No recipe found on this page",
+    "@errorNoRecipeFound": {
+        "description": "Error when no recipe data is found"
+    },
+    "errorParseError": "Could not extract recipe details",
+    "@errorParseError": {
+        "description": "Error when recipe parsing fails"
+    },
+    "errorTimeout": "Request timed out. Please try again",
+    "@errorTimeout": {
+        "description": "Error when request times out"
+    },
+    "missingField": "Not available",
+    "@missingField": {
+        "description": "Placeholder for missing recipe fields"
+    },
+    "editRecipe": "Edit",
+    "@editRecipe": {
+        "description": "Button text to edit recipe"
     }
 }

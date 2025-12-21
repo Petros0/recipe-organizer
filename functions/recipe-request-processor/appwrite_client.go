@@ -6,6 +6,8 @@ import (
 	"github.com/appwrite/sdk-for-go/client"
 	"github.com/appwrite/sdk-for-go/databases"
 	"github.com/appwrite/sdk-for-go/id"
+	"github.com/appwrite/sdk-for-go/permission"
+	"github.com/appwrite/sdk-for-go/role"
 )
 
 // Status constants for recipe request tracking
@@ -28,7 +30,7 @@ const (
 // RecipeRequestStore defines the interface for recipe request operations
 type RecipeRequestStore interface {
 	UpdateStatus(documentID, status string) error
-	CreateRecipe(requestID string, recipe *Recipe) (string, error)
+	CreateRecipe(requestID, userID string, recipe *Recipe) (string, error)
 }
 
 // RecipeRequestClient handles database operations for recipe requests
@@ -76,14 +78,22 @@ func (c *RecipeRequestClient) UpdateStatus(documentID, status string) error {
 }
 
 // CreateRecipe creates a new recipe document linked to a recipe request
-func (c *RecipeRequestClient) CreateRecipe(requestID string, recipe *Recipe) (string, error) {
-	data := recipeToMap(requestID, recipe)
+func (c *RecipeRequestClient) CreateRecipe(requestID, userID string, recipe *Recipe) (string, error) {
+	data := recipeToMap(requestID, userID, recipe)
+
+	// Set permissions to allow only the user who owns the recipe to access it
+	permissions := []string{
+		permission.Read(role.User(userID, "")),
+		permission.Update(role.User(userID, "")),
+		permission.Delete(role.User(userID, "")),
+	}
 
 	doc, err := c.databases.CreateDocument(
 		DatabaseID,
 		RecipeCollectionID,
 		id.Unique(),
 		data,
+		c.databases.WithCreateDocumentPermissions(permissions),
 	)
 	if err != nil {
 		return "", err
@@ -93,9 +103,10 @@ func (c *RecipeRequestClient) CreateRecipe(requestID string, recipe *Recipe) (st
 }
 
 // recipeToMap converts a Recipe struct to a map for Appwrite document creation
-func recipeToMap(requestID string, recipe *Recipe) map[string]interface{} {
+func recipeToMap(requestID, userID string, recipe *Recipe) map[string]interface{} {
 	data := map[string]interface{}{
 		"fk_recipe_request": requestID,
+		"user_id":           userID,
 		"name":              recipe.Name,
 	}
 

@@ -23,6 +23,7 @@ class ImportRecipeDialog extends StatefulWidget {
 
 class _ImportRecipeDialogState extends State<ImportRecipeDialog> {
   final TextEditingController _urlController = TextEditingController();
+  String? _validationError;
 
   @override
   void dispose() {
@@ -30,11 +31,37 @@ class _ImportRecipeDialogState extends State<ImportRecipeDialog> {
     super.dispose();
   }
 
+  bool _isValidUrl(String url) {
+    if (url.isEmpty) return false;
+    try {
+      final uri = Uri.parse(url);
+      return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https') && uri.host.isNotEmpty;
+    } on FormatException {
+      return false;
+    }
+  }
+
   void _handleImport() {
     final url = _urlController.text.trim();
-    if (url.isNotEmpty) {
-      widget.onImport(url);
+
+    if (url.isEmpty) {
+      setState(() {
+        _validationError = context.l10n.invalidUrl;
+      });
+      return;
     }
+
+    if (!_isValidUrl(url)) {
+      setState(() {
+        _validationError = context.l10n.invalidUrlFormat;
+      });
+      return;
+    }
+
+    setState(() {
+      _validationError = null;
+    });
+    widget.onImport(url);
   }
 
   @override
@@ -71,16 +98,30 @@ class _ImportRecipeDialogState extends State<ImportRecipeDialog> {
             keyboardType: TextInputType.url,
             textInputAction: TextInputAction.done,
             onSubmit: (_) => _handleImport(),
+            onChange: (_) {
+              if (_validationError != null) {
+                setState(() {
+                  _validationError = null;
+                });
+              }
+            },
           ),
+          if (_validationError != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _validationError!,
+              style: theme.typography.sm.copyWith(
+                color: theme.colors.destructive,
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               FButton(
                 style: FButtonStyle.outline(),
-                onPress: widget.isLoading
-                    ? null
-                    : () => Navigator.of(context).pop(),
+                onPress: widget.isLoading ? null : () => Navigator.of(context).pop(),
                 child: Text(l10n.cancelButton),
               ),
               const SizedBox(width: 12),

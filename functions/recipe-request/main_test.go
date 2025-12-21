@@ -20,9 +20,10 @@ func TestCreateRequest_Integration(t *testing.T) {
 
 	// Test creating a request
 	testURL := "https://example.com/test-recipe"
+	testUserID := "test-user-123"
 	t.Logf("Creating request record for: %s", testURL)
 
-	docID, err := client.CreateRequest(testURL)
+	docID, err := client.CreateRequest(testURL, testUserID)
 	if err != nil {
 		t.Fatalf("Failed to create request: %v", err)
 	}

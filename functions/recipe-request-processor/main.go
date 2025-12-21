@@ -18,6 +18,7 @@ type DocumentEventPayload struct {
 	UpdatedAt    string `json:"$updatedAt"`
 	URL          string `json:"url"`
 	Status       string `json:"status"`
+	UserID       string `json:"user_id"`
 }
 
 // This Appwrite function will be executed every time your function is triggered
@@ -47,6 +48,12 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	if payload.URL == "" {
 		return Context.Res.Json(ErrorResponse{
 			Error: "url is required in event payload",
+		}, Context.Res.WithStatusCode(http.StatusBadRequest))
+	}
+
+	if payload.UserID == "" {
+		return Context.Res.Json(ErrorResponse{
+			Error: "user_id is required in event payload",
 		}, Context.Res.WithStatusCode(http.StatusBadRequest))
 	}
 
@@ -117,7 +124,7 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	}
 
 	// Save recipe to database
-	recipeID, err := requestClient.CreateRecipe(payload.ID, recipe)
+	recipeID, err := requestClient.CreateRecipe(payload.ID, payload.UserID, recipe)
 	if err != nil {
 		Context.Error(fmt.Sprintf("Error saving recipe to database: %v", err))
 		// Update status to FAILED since we couldn't save
