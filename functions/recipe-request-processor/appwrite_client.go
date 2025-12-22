@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/appwrite/sdk-for-go/client"
@@ -74,7 +75,10 @@ func (c *RecipeRequestClient) UpdateStatus(documentID, status string) error {
 		documentID,
 		c.databases.WithUpdateDocumentData(data),
 	)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to update recipe request status to %s: %w", status, err)
+	}
+	return nil
 }
 
 // CreateRecipe creates a new recipe document linked to a recipe request
@@ -96,7 +100,7 @@ func (c *RecipeRequestClient) CreateRecipe(requestID, userID string, recipe *Rec
 		c.databases.WithCreateDocumentPermissions(permissions),
 	)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create recipe document: %w", err)
 	}
 
 	return doc.Id, nil

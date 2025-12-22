@@ -129,7 +129,7 @@ void main() {
           functionId: 'recipe-request',
           body: any(named: 'body'),
           method: any(named: 'method'),
-          headers: {'x-appwrite-user-id': inputUserId},
+          headers: {'x-user-id': inputUserId},
         ),
       ).called(1);
     });

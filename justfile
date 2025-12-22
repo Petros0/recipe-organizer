@@ -66,3 +66,45 @@ deploy-all:
     @just deploy-recipe-request
     @just deploy-recipe-request-processor
     @echo "All functions deployed successfully!"
+
+logs:
+    @echo "Showing filtered logs (your app logs only, excluding system noise)..."
+    @echo "Press Ctrl+C to stop"
+    DEVICE=`adb devices | grep -E "device$$" | awk '{print $$1}' | grep -E "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | head -1`; \
+    if [ -z "$$DEVICE" ]; then \
+        DEVICE=`adb devices | grep -E "device$$" | head -1 | awk '{print $$1}'`; \
+    fi; \
+    if [ -z "$$DEVICE" ]; then \
+        echo "Error: No device found. Please connect a device or start an emulator."; \
+        exit 1; \
+    fi; \
+    echo "Using device: $$DEVICE"; \
+    adb -s $$DEVICE logcat -c && adb -s $$DEVICE logcat flutter:* *:S | grep -v -E "(ACCESSIBILITY_EVENT|VRI\[|InsetsController|SurfaceView|BLASTBufferQueue|InputMethodManager|InsetsSourceConsumer|ImeTracker|Choreographer|HWUI|CacheManager|InputTransport|ViewRootImpl|SV\[)"
+
+logs-verbose:
+    @echo "Showing all Flutter logs (including framework logs)..."
+    @echo "Press Ctrl+C to stop"
+    DEVICE=`adb devices | grep -E "device$$" | awk '{print $$1}' | grep -E "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | head -1`; \
+    if [ -z "$$DEVICE" ]; then \
+        DEVICE=`adb devices | grep -E "device$$" | head -1 | awk '{print $$1}'`; \
+    fi; \
+    if [ -z "$$DEVICE" ]; then \
+        echo "Error: No device found. Please connect a device or start an emulator."; \
+        exit 1; \
+    fi; \
+    echo "Using device: $$DEVICE"; \
+    adb -s $$DEVICE logcat -c && adb -s $$DEVICE logcat flutter:* *:S
+
+logs-clean:
+    @echo "Showing only your app's logs (developer.log output, minimal filtering)..."
+    @echo "Press Ctrl+C to stop"
+    DEVICE=`adb devices | grep -E "device$$" | awk '{print $$1}' | grep -E "^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | head -1`; \
+    if [ -z "$$DEVICE" ]; then \
+        DEVICE=`adb devices | grep -E "device$$" | head -1 | awk '{print $$1}'`; \
+    fi; \
+    if [ -z "$$DEVICE" ]; then \
+        echo "Error: No device found. Please connect a device or start an emulator."; \
+        exit 1; \
+    fi; \
+    echo "Using device: $$DEVICE"; \
+    adb -s $$DEVICE logcat -c && adb -s $$DEVICE logcat flutter:* | grep -E "(flutter|recipe_organizer)" 

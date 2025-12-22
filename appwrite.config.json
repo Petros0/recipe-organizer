@@ -100,7 +100,7 @@
             "databaseId": "6930a343001607ad7cbd",
             "name": "recipe_request",
             "enabled": true,
-            "rowSecurity": false,
+            "rowSecurity": true,
             "columns": [
                 {
                     "key": "url",
@@ -123,6 +123,15 @@
                     ],
                     "format": "enum",
                     "default": null
+                },
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
                 }
             ],
             "indexes": []
@@ -133,7 +142,7 @@
             "databaseId": "6930a343001607ad7cbd",
             "name": "recipe",
             "enabled": true,
-            "rowSecurity": false,
+            "rowSecurity": true,
             "columns": [
                 {
                     "key": "fk_recipe_request",
@@ -367,6 +376,15 @@
                     "required": false,
                     "array": false,
                     "size": 64,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "user_id",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
                     "default": null,
                     "encrypt": false
                 }

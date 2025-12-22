@@ -17,10 +17,11 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	}
 
 	// Extract user ID from header
-	userID := Context.Req.Headers["x-appwrite-user-id"]
+	userID := Context.Req.Headers["x-user-id"]
 	if userID == "" {
+		Context.Error("Missing x-user-id header")
 		return Context.Res.Json(ErrorResponse{
-			Error: "x-appwrite-user-id header is required",
+			Error: "x-user-id header is required",
 		}, Context.Res.WithStatusCode(http.StatusUnauthorized))
 	}
 

@@ -28,7 +28,7 @@ class RecipeRequestRepository {
       functionId: AppwriteConstants.recipeRequestFunctionId,
       body: jsonEncode({'url': url}),
       method: ExecutionMethod.pOST,
-      headers: {'x-appwrite-user-id': userId},
+      headers: {'x-user-id': userId},
     );
 
     developer.log('Function response status: ${execution.status}');

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/appwrite/sdk-for-go/client"
@@ -80,7 +81,7 @@ func (c *RecipeRequestClient) CreateRequest(url, userID string) (string, error) 
 		c.databases.WithCreateDocumentPermissions(permissions),
 	)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create recipe request document: %w", err)
 	}
 
 	return doc.Id, nil
