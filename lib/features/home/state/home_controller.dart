@@ -67,9 +67,14 @@ class HomeController {
     }
   }
 
-  /// Loads mock recipes for development.
-  void loadMockRecipes() {
-    _recipes.value = _mockRecipes;
+  /// Deletes a recipe by its ID.
+  Future<void> deleteRecipe(String recipeId) async {
+    try {
+      await _importService.deleteRecipe(recipeId);
+      _recipes.value = _recipes.value.where((r) => r.id != recipeId).toList();
+    } on Exception catch (e) {
+      _error.value = 'Failed to delete recipe: $e';
+    }
   }
 
   /// Clears all recipes (for testing empty state).
@@ -203,86 +208,3 @@ class HomeController {
     _requestSubscription?.cancel();
   }
 }
-
-/// Mock recipes for development and testing.
-const List<Recipe> _mockRecipes = [
-  Recipe(
-    id: '1',
-    name: 'Spaghetti Carbonara',
-    images: [
-      'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=400',
-    ],
-    description: 'Classic Italian pasta dish with eggs, cheese, and pancetta',
-    authorName: 'Italian Chef',
-    prepTime: 'PT15M',
-    cookTime: 'PT20M',
-    totalTime: 'PT35M',
-    ingredients: [
-      '400g spaghetti',
-      '200g pancetta',
-      '4 egg yolks',
-      '100g pecorino cheese',
-      'Black pepper',
-    ],
-    instructions: [
-      'Cook the spaghetti in salted water',
-      'Fry the pancetta until crispy',
-      'Mix egg yolks with cheese',
-      'Combine everything off heat',
-      'Season with black pepper',
-    ],
-  ),
-  Recipe(
-    id: '2',
-    name: 'Greek Salad',
-    images: [
-      'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400',
-    ],
-    description: 'Fresh Mediterranean salad with feta cheese and olives',
-    authorName: 'Mediterranean Kitchen',
-    prepTime: 'PT10M',
-    totalTime: 'PT10M',
-    ingredients: [
-      'Tomatoes',
-      'Cucumber',
-      'Red onion',
-      'Feta cheese',
-      'Kalamata olives',
-      'Olive oil',
-      'Oregano',
-    ],
-    instructions: [
-      'Chop vegetables into chunks',
-      'Add feta cheese and olives',
-      'Drizzle with olive oil',
-      'Sprinkle oregano',
-    ],
-  ),
-  Recipe(
-    id: '3',
-    name: 'Chocolate Lava Cake',
-    images: [
-      'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=400',
-    ],
-    description: 'Decadent chocolate dessert with molten center',
-    authorName: 'Pastry Chef',
-    prepTime: 'PT15M',
-    cookTime: 'PT12M',
-    totalTime: 'PT27M',
-    ingredients: [
-      '200g dark chocolate',
-      '100g butter',
-      '2 eggs',
-      '2 egg yolks',
-      '50g sugar',
-      '25g flour',
-    ],
-    instructions: [
-      'Melt chocolate and butter',
-      'Whisk eggs with sugar',
-      'Combine and add flour',
-      'Bake at 200°C for 12 minutes',
-      'Serve immediately',
-    ],
-  ),
-];

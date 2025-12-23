@@ -34,8 +34,8 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
     super.initState();
     _controller = getIt<HomeController>();
     _authController = getIt<AuthController>();
-    // Load mock recipes on init for development
-    _controller.loadMockRecipes();
+    // Load recipes from the database
+    _controller.loadRecipes();
   }
 
   Future<void> _showImportDialog() async {
@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
       MaterialPageRoute<void>(
         builder: (context) => RecipePreviewPage(
           recipe: recipe,
-          onSave: () {
+          onSaveOrDelete: () {
             _controller.saveRecipe();
             Navigator.of(context).pop();
           },
@@ -64,7 +64,8 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
             _controller.cancelImport();
             Navigator.of(context).pop();
           },
-          isSaving: _controller.importState.value == ImportState.saving,
+          isProcessing: _controller.importState.value == ImportState.saving,
+          isNewRecipe: true,
         ),
       ),
     );
@@ -185,7 +186,10 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
       MaterialPageRoute<void>(
         builder: (context) => RecipePreviewPage(
           recipe: recipe,
-          onSave: () => Navigator.of(context).pop(),
+          onSaveOrDelete: () async {
+            await _controller.deleteRecipe(recipe.id);
+            if (context.mounted) Navigator.of(context).pop();
+          },
         ),
       ),
     );

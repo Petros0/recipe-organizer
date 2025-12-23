@@ -54,4 +54,13 @@ class RecipeRepository {
       return null;
     }
   }
+
+  /// Deletes a recipe by its ID.
+  Future<void> deleteRecipe(String id) async {
+    await _databases.deleteDocument(
+      databaseId: AppwriteConstants.databaseId,
+      collectionId: AppwriteConstants.recipeCollectionId,
+      documentId: id,
+    );
+  }
 }

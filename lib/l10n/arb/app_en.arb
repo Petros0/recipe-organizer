@@ -123,5 +123,9 @@
     "editRecipe": "Edit",
     "@editRecipe": {
         "description": "Button text to edit recipe"
+    },
+    "deleteRecipe": "Delete Recipe",
+    "@deleteRecipe": {
+        "description": "Button text to delete recipe from collection"
     }
 }

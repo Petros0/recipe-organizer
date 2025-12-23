@@ -48,4 +48,9 @@ class RecipeImportService {
   Future<List<Recipe>> listRecipes({int limit = 25, int offset = 0}) async {
     return _recipeRepository.listRecipes(limit: limit, offset: offset);
   }
+
+  /// Deletes a recipe by its ID.
+  Future<void> deleteRecipe(String recipeId) async {
+    return _recipeRepository.deleteRecipe(recipeId);
+  }
 }

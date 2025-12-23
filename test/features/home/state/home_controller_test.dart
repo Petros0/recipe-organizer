@@ -38,21 +38,42 @@ void main() {
       });
     });
 
-    group('loadMockRecipes', () {
-      test('populates recipes list', () {
+    group('loadRecipes', () {
+      test('populates recipes list from service', () async {
+        // Arrange
+        const recipes = [
+          Recipe(id: '1', name: 'Recipe 1'),
+          Recipe(id: '2', name: 'Recipe 2'),
+        ];
+        when(() => mockImportService.listRecipes(limit: 25, offset: 0)).thenAnswer((_) async => recipes);
+
         // Act
-        controller.loadMockRecipes();
+        await controller.loadRecipes();
 
         // Assert
-        expect(controller.recipes.value, isNotEmpty);
+        expect(controller.recipes.value, equals(recipes));
         expect(controller.isEmpty.value, isFalse);
+      });
+
+      test('sets error on failure', () async {
+        // Arrange
+        when(() => mockImportService.listRecipes(limit: 25, offset: 0)).thenThrow(Exception('Network error'));
+
+        // Act
+        await controller.loadRecipes();
+
+        // Assert
+        expect(controller.error.value, isNotNull);
+        expect(controller.error.value, contains('Failed to load recipes'));
       });
     });
 
     group('clearRecipes', () {
-      test('empties recipes list', () {
+      test('empties recipes list', () async {
         // Arrange
-        controller.loadMockRecipes();
+        const recipes = [Recipe(id: '1', name: 'Recipe 1')];
+        when(() => mockImportService.listRecipes(limit: 25, offset: 0)).thenAnswer((_) async => recipes);
+        await controller.loadRecipes();
 
         // Act
         controller.clearRecipes();
@@ -60,6 +81,38 @@ void main() {
         // Assert
         expect(controller.recipes.value, isEmpty);
         expect(controller.isEmpty.value, isTrue);
+      });
+    });
+
+    group('deleteRecipe', () {
+      test('removes recipe from list', () async {
+        // Arrange
+        const recipes = [
+          Recipe(id: '1', name: 'Recipe 1'),
+          Recipe(id: '2', name: 'Recipe 2'),
+        ];
+        when(() => mockImportService.listRecipes(limit: 25, offset: 0)).thenAnswer((_) async => recipes);
+        when(() => mockImportService.deleteRecipe('1')).thenAnswer((_) async {});
+        await controller.loadRecipes();
+
+        // Act
+        await controller.deleteRecipe('1');
+
+        // Assert
+        expect(controller.recipes.value.length, equals(1));
+        expect(controller.recipes.value.first.id, equals('2'));
+      });
+
+      test('sets error on failure', () async {
+        // Arrange
+        when(() => mockImportService.deleteRecipe('1')).thenThrow(Exception('Delete failed'));
+
+        // Act
+        await controller.deleteRecipe('1');
+
+        // Assert
+        expect(controller.error.value, isNotNull);
+        expect(controller.error.value, contains('Failed to delete recipe'));
       });
     });
 
