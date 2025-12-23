@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-url-recipe-import`  
 **Created**: 2025-12-17  
-**Status**: Draft  
+**Status**: Done  
 **Input**: URL-based recipe import feature for extracting recipe data from websites using schema.org Recipe structured data with LLM fallback
 
 ## Clarifications

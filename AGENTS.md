@@ -142,17 +142,12 @@ return MaterialApp(
 
 ### Cloud Functions
 
-#### `fetch-recipe-from-website` (Go)
-
-Extracts recipe data from URLs using schema.org JSON-LD:
-
-- **Runtime**: Go 1.23
-- **Endpoint**: `/ping` returns "Pong"
-- **Input**: `url` (query param or JSON body)
-- **Output**: Recipe JSON with name, image, ingredients, instructions, nutrition
-- **Features**: HTTP client with browser headers, headless browser fallback for bot protection
+The functions that the application is using are under the `functions/` and they are mainly Go applications.
 
 ## Common Commands
+
+The justfile contains common commands that can be reused with:
+`just <>`
 
 ```bash
 # Run app (development flavor)

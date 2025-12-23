@@ -80,7 +80,7 @@ All code MUST pass `very_good_analysis` linting rules.
 the entire codebase.
 
 **Non-negotiables**:
-- Run `dart fix --apply && dart format . --line-length 120` before commits
+- Run `just format` before commits
 - Zero linting warnings in production code
 - Naming conventions enforced:
   - Classes: `PascalCase`
@@ -145,6 +145,8 @@ The following technology choices are binding for this project:
 | production  | `main_production.dart`   | Production release |
 
 ### Commands
+
+The @justfile can be used to see useful commands. If you see that you are reusing commands that are not in the justfile, add them.
 
 ```bash
 # Development

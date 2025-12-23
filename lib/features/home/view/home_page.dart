@@ -7,12 +7,12 @@ import 'package:recipe_organizer/features/auth/state/auth_controller.dart';
 import 'package:recipe_organizer/features/home/model/recipe.dart';
 import 'package:recipe_organizer/features/home/state/home_controller.dart';
 import 'package:recipe_organizer/features/home/state/import_state.dart';
+import 'package:recipe_organizer/features/home/state/pending_import.dart';
 import 'package:recipe_organizer/features/home/view/recipe_preview_page.dart';
 import 'package:recipe_organizer/features/home/view/widgets/empty_state.dart';
 import 'package:recipe_organizer/features/home/view/widgets/import_recipe_dialog.dart';
+import 'package:recipe_organizer/features/home/view/widgets/pending_import_card.dart';
 import 'package:recipe_organizer/features/home/view/widgets/recipe_card.dart';
-import 'package:recipe_organizer/features/home/view/widgets/recipe_error_card.dart';
-import 'package:recipe_organizer/features/home/view/widgets/recipe_skeleton_card.dart';
 import 'package:recipe_organizer/l10n/l10n.dart';
 import 'package:signals/signals_flutter.dart';
 
@@ -51,39 +51,11 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
     );
   }
 
-  void _navigateToPreview(Recipe recipe) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => RecipePreviewPage(
-          recipe: recipe,
-          onSaveOrDelete: () {
-            _controller.saveRecipe();
-            Navigator.of(context).pop();
-          },
-          onCancel: () {
-            _controller.cancelImport();
-            Navigator.of(context).pop();
-          },
-          isProcessing: _controller.importState.value == ImportState.saving,
-          isNewRecipe: true,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = context.theme;
     final importState = _controller.importState.watch(context);
-    final previewRecipe = _controller.previewRecipe.watch(context);
-
-    // Navigate to preview when recipe is ready
-    if (importState == ImportState.preview && previewRecipe != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToPreview(previewRecipe);
-      });
-    }
 
     return FScaffold(
       header: FHeader(
@@ -96,58 +68,23 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
   Widget _buildContent(FThemeData theme, ImportState importState) {
     final isEmpty = _controller.isEmpty.watch(context);
     final recipes = _controller.recipes.watch(context);
-    final error = _controller.error.watch(context);
-    final isExtracting = _controller.isExtracting.watch(context);
+    final pendingImports = _controller.pendingImports.watch(context);
 
-    // Show error card if import failed
-    if (importState == ImportState.error && error != null) {
-      return Stack(
-        children: [
-          if (recipes.isNotEmpty) _buildRecipeGrid(recipes) else EmptyState(onImportPressed: _showImportDialog),
-          Positioned(
-            top: 16,
-            left: 16,
-            right: 16,
-            child: RecipeErrorCard(
-              errorMessage: error,
-              onRetry: _controller.retryImport,
-              onDismiss: _controller.clearError,
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Show skeleton during extraction
-    if (isExtracting) {
-      return Stack(
-        children: [
-          if (recipes.isNotEmpty) _buildRecipeGrid(recipes) else const Center(child: RecipeSkeletonCard()),
-          if (recipes.isNotEmpty)
-            const Positioned(
-              top: 16,
-              left: 16,
-              right: 16,
-              child: RecipeSkeletonCard(),
-            ),
-          _buildFloatingActionButton(theme),
-        ],
-      );
-    }
-
-    if (isEmpty) {
+    if (isEmpty && pendingImports.isEmpty) {
       return EmptyState(onImportPressed: _showImportDialog);
     }
 
     return Stack(
       children: [
-        _buildRecipeGrid(recipes),
+        _buildRecipeList(recipes, pendingImports),
         _buildFloatingActionButton(theme),
       ],
     );
   }
 
-  Widget _buildRecipeGrid(List<Recipe> recipes) {
+  Widget _buildRecipeList(List<Recipe> recipes, List<PendingImport> pending) {
+    final totalItems = pending.length + recipes.length;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: GridView.builder(
@@ -156,9 +93,25 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
         ),
-        itemCount: recipes.length,
+        itemCount: totalItems,
         itemBuilder: (context, index) {
-          final recipe = recipes[index];
+          // Show pending imports first
+          if (index < pending.length) {
+            final pendingImport = pending[index];
+            return PendingImportCard(
+              pendingImport: pendingImport,
+              onRetry: () => _controller.retryPendingImport(
+                pendingImport.request.id,
+              ),
+              onDismiss: () => _controller.dismissPendingImport(
+                pendingImport.request.id,
+              ),
+            );
+          }
+
+          // Then show saved recipes
+          final recipeIndex = index - pending.length;
+          final recipe = recipes[recipeIndex];
           return RecipeCard(
             recipe: recipe,
             onTap: () => _onRecipeTap(recipe),
@@ -184,11 +137,11 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
   void _onRecipeTap(Recipe recipe) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => RecipePreviewPage(
+        builder: (_) => RecipePreviewPage(
           recipe: recipe,
           onSaveOrDelete: () async {
             await _controller.deleteRecipe(recipe.id);
-            if (context.mounted) Navigator.of(context).pop();
+            if (mounted) Navigator.of(context).pop();
           },
         ),
       ),

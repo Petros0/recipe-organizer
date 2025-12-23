@@ -1,5 +1,7 @@
 package handler
 
+import "fmt"
+
 // parseImage parses image field which can be string or array
 func parseImage(imageVal interface{}) []string {
 	var images []string
@@ -108,8 +110,8 @@ func parseAuthor(authorVal interface{}) *Person {
 	return author
 }
 
-// parseStringOrArray parses a field that can be either a string or array of strings
-// This is useful for fields like recipeCategory and recipeCuisine which can be either format
+// parseStringOrArray parses a field that can be either a string, number, or array
+// This is useful for fields like recipeCategory, recipeCuisine, and recipeYield
 func parseStringOrArray(val interface{}) []string {
 	if val == nil {
 		return nil
@@ -122,10 +124,18 @@ func parseStringOrArray(val interface{}) []string {
 		if v != "" {
 			result = append(result, v)
 		}
+	case float64:
+		result = append(result, fmt.Sprintf("%g", v))
+	case int:
+		result = append(result, fmt.Sprintf("%d", v))
 	case []interface{}:
 		for _, item := range v {
 			if str, ok := item.(string); ok && str != "" {
 				result = append(result, str)
+			} else if num, ok := item.(float64); ok {
+				result = append(result, fmt.Sprintf("%g", num))
+			} else if num, ok := item.(int); ok {
+				result = append(result, fmt.Sprintf("%d", num))
 			}
 		}
 	case []string:

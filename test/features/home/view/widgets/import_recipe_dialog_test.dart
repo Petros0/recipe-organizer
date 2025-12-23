@@ -130,5 +130,28 @@ void main() {
       // Assert
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
+
+    testWidgets('calls onImport immediately without waiting', (tester) async {
+      // Arrange
+      var onImportCalled = false;
+      const testUrl = 'https://example.com/recipe';
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          onImport: (url) {
+            onImportCalled = true;
+          },
+        ),
+      );
+      await tester.pump();
+
+      // Act
+      await tester.enterText(find.byType(TextField), testUrl);
+      await tester.tap(find.text('Import'));
+      await tester.pump();
+
+      // Assert - onImport should be called immediately
+      expect(onImportCalled, isTrue);
+    });
   });
 }

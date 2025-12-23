@@ -42,36 +42,36 @@ class SourceAttribution extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colors.secondary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.link,
-                size: 20,
-                color: theme.colors.mutedForeground,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (authorName != null)
-                      Text(
-                        authorName!,
-                        style: theme.typography.sm.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: theme.colors.foreground,
+        GestureDetector(
+          onTap: sourceUrl != null ? () => _launchUrl(sourceUrl!) : null,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colors.secondary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.link,
+                  size: 20,
+                  color: theme.colors.mutedForeground,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (authorName != null)
+                        Text(
+                          authorName!,
+                          style: theme.typography.sm.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: theme.colors.foreground,
+                          ),
                         ),
-                      ),
-                    if (sourceUrl != null)
-                      GestureDetector(
-                        onTap: () => _launchUrl(sourceUrl!),
-                        child: Text(
+                      if (sourceUrl != null)
+                        Text(
                           _formatUrl(sourceUrl!),
                           style: theme.typography.xs.copyWith(
                             color: theme.colors.primary,
@@ -80,20 +80,17 @@ class SourceAttribution extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              if (sourceUrl != null)
-                IconButton(
-                  icon: Icon(
+                if (sourceUrl != null)
+                  Icon(
                     Icons.open_in_new,
                     size: 18,
-                    color: theme.colors.mutedForeground,
+                    color: theme.colors.primary,
                   ),
-                  onPressed: () => _launchUrl(sourceUrl!),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

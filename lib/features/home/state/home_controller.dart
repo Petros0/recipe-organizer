@@ -4,13 +4,14 @@ import 'package:recipe_organizer/features/home/model/recipe.dart';
 import 'package:recipe_organizer/features/home/model/recipe_request.dart';
 import 'package:recipe_organizer/features/home/service/recipe_import_service.dart';
 import 'package:recipe_organizer/features/home/state/import_state.dart';
+import 'package:recipe_organizer/features/home/state/pending_import.dart';
 import 'package:signals/signals.dart';
 
 /// Controller for managing the home page state using Signals.
 class HomeController {
   /// Creates a new [HomeController] instance.
   HomeController({required RecipeImportService importService}) : _importService = importService {
-    isEmpty = computed(() => _recipes.value.isEmpty);
+    isEmpty = computed(() => _recipes.value.isEmpty && _pendingImports.value.isEmpty);
     isExtracting = computed(
       () => _importState.value == ImportState.submitting || _importState.value == ImportState.extracting,
     );
@@ -18,6 +19,7 @@ class HomeController {
 
   final RecipeImportService _importService;
   StreamSubscription<RecipeRequest>? _requestSubscription;
+  final Map<String, StreamSubscription<RecipeRequest>> _pendingSubscriptions = {};
 
   final Signal<List<Recipe>> _recipes = signal<List<Recipe>>([]);
   final Signal<bool> _isLoading = signal<bool>(false);
@@ -27,6 +29,7 @@ class HomeController {
   );
   final Signal<RecipeRequest?> _activeRequest = signal<RecipeRequest?>(null);
   final Signal<Recipe?> _previewRecipe = signal<Recipe?>(null);
+  final Signal<List<PendingImport>> _pendingImports = signal<List<PendingImport>>([]);
 
   /// The list of recipes.
   ReadonlySignal<List<Recipe>> get recipes => _recipes;
@@ -51,6 +54,9 @@ class HomeController {
 
   /// The recipe available for preview.
   ReadonlySignal<Recipe?> get previewRecipe => _previewRecipe;
+
+  /// List of pending imports (loading or failed).
+  ReadonlySignal<List<PendingImport>> get pendingImports => _pendingImports;
 
   /// Loads recipes from the backend.
   Future<void> loadRecipes() async {
@@ -85,6 +91,7 @@ class HomeController {
   /// Imports a recipe from a URL.
   ///
   /// The [userId] identifies the authenticated user making the request.
+  /// This is a non-blocking operation - the import is added to pending list.
   Future<void> importRecipe({
     required String url,
     required String userId,
@@ -103,10 +110,16 @@ class HomeController {
         url: url,
         userId: userId,
       );
+
+      // Add to pending imports list
+      final pendingImport = PendingImport(request: request, userId: userId);
+      _pendingImports.value = [pendingImport, ..._pendingImports.value];
+
+      // Also set as active request for backward compatibility
       _activeRequest.value = request;
       _importState.value = ImportState.extracting;
 
-      _subscribeToRequest(request.id);
+      _subscribeToImport(request.id, userId);
     } on Exception catch (e) {
       _error.value = e.toString();
       _importState.value = ImportState.error;
@@ -115,50 +128,119 @@ class HomeController {
 
   String? _lastImportUserId;
 
-  void _subscribeToRequest(String requestId) {
-    _requestSubscription?.cancel();
-    _requestSubscription = _importService
+  void _subscribeToImport(String requestId, String userId) {
+    // Cancel any existing subscription for this request
+    _pendingSubscriptions[requestId]?.cancel();
+
+    _pendingSubscriptions[requestId] = _importService
         .subscribeToRequest(requestId)
         .listen(
           (request) {
-            _activeRequest.value = request;
+            // Update the pending import with new request status
+            _updatePendingImport(requestId, (pending) => pending.copyWith(request: request));
+
+            // Also update active request for backward compatibility
+            if (_activeRequest.value?.id == requestId) {
+              _activeRequest.value = request;
+            }
 
             switch (request.status) {
               case RecipeRequestStatus.completed:
-                unawaited(_fetchExtractedRecipe(requestId));
+                unawaited(_onImportComplete(requestId));
               case RecipeRequestStatus.failed:
-                _importState.value = ImportState.error;
-                _error.value = 'Recipe extraction failed';
+                _onImportError(requestId, 'Recipe extraction failed');
               case RecipeRequestStatus.requested:
               case RecipeRequestStatus.inProgress:
-                // Stay in extracting state
+                // Stay in loading state
                 break;
             }
           },
           onError: (Object error) {
-            _error.value = error.toString();
-            _importState.value = ImportState.error;
+            _onImportError(requestId, error.toString());
           },
         );
   }
 
-  Future<void> _fetchExtractedRecipe(String requestId) async {
+  void _updatePendingImport(String requestId, PendingImport Function(PendingImport) update) {
+    _pendingImports.value = _pendingImports.value.map((pending) {
+      if (pending.request.id == requestId) {
+        return update(pending);
+      }
+      return pending;
+    }).toList();
+  }
+
+  Future<void> _onImportComplete(String requestId) async {
     try {
       final recipe = await _importService.getExtractedRecipe(requestId);
       if (recipe != null) {
-        _previewRecipe.value = recipe;
-        _importState.value = ImportState.preview;
+        // Remove from pending and add to recipes
+        _pendingImports.value = _pendingImports.value.where((p) => p.request.id != requestId).toList();
+        _recipes.value = [recipe, ..._recipes.value];
+
+        // Update state for backward compatibility
+        if (_activeRequest.value?.id == requestId) {
+          _previewRecipe.value = recipe;
+          _importState.value = ImportState.preview;
+        }
+
+        // Clean up subscription
+        _pendingSubscriptions[requestId]?.cancel();
+        _pendingSubscriptions.remove(requestId);
       } else {
-        _error.value = 'Recipe not found';
-        _importState.value = ImportState.error;
+        _onImportError(requestId, 'Recipe not found');
       }
     } on Exception catch (e) {
-      _error.value = e.toString();
+      _onImportError(requestId, e.toString());
+    }
+  }
+
+  void _onImportError(String requestId, String errorMessage) {
+    // Update pending import with error
+    _updatePendingImport(
+      requestId,
+      (pending) => PendingImport(
+        request: pending.request,
+        userId: pending.userId,
+        errorMessage: errorMessage,
+      ),
+    );
+
+    // Update state for backward compatibility
+    if (_activeRequest.value?.id == requestId) {
+      _error.value = errorMessage;
       _importState.value = ImportState.error;
     }
   }
 
+  /// Retries a failed import by its request ID.
+  Future<void> retryPendingImport(String requestId) async {
+    final pendingIndex = _pendingImports.value.indexWhere((p) => p.request.id == requestId);
+    if (pendingIndex == -1) return;
+
+    final pending = _pendingImports.value[pendingIndex];
+    if (!pending.hasError) return;
+
+    // Clear error and restart subscription
+    _updatePendingImport(requestId, (p) => p.clearError());
+    _subscribeToImport(requestId, pending.userId);
+
+    // Re-import with the original URL
+    await importRecipe(url: pending.request.url, userId: pending.userId);
+
+    // Remove the old failed import
+    dismissPendingImport(requestId);
+  }
+
+  /// Dismisses a pending import (removes from list).
+  void dismissPendingImport(String requestId) {
+    _pendingSubscriptions[requestId]?.cancel();
+    _pendingSubscriptions.remove(requestId);
+    _pendingImports.value = _pendingImports.value.where((p) => p.request.id != requestId).toList();
+  }
+
   /// Retries the last failed import.
+  @Deprecated('Use retryPendingImport instead')
   Future<void> retryImport() async {
     final request = _activeRequest.value;
     final userId = _lastImportUserId;
@@ -206,5 +288,9 @@ class HomeController {
   /// Disposes resources.
   void dispose() {
     _requestSubscription?.cancel();
+    for (final subscription in _pendingSubscriptions.values) {
+      subscription.cancel();
+    }
+    _pendingSubscriptions.clear();
   }
 }

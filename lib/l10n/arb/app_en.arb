@@ -127,5 +127,27 @@
     "deleteRecipe": "Delete Recipe",
     "@deleteRecipe": {
         "description": "Button text to delete recipe from collection"
+    },
+    "importPending": "Importing recipe...",
+    "@importPending": {
+        "description": "Status message for pending recipe import"
+    },
+    "importRetry": "Retry",
+    "@importRetry": {
+        "description": "Button text to retry failed import"
+    },
+    "importDismiss": "Dismiss",
+    "@importDismiss": {
+        "description": "Button text to dismiss failed import"
+    },
+    "multipleImportsInProgress": "{count, plural, =1{1 recipe importing} other{{count} recipes importing}}",
+    "@multipleImportsInProgress": {
+        "description": "Message showing number of recipes being imported",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
     }
 }

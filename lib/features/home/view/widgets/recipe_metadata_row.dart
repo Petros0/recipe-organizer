@@ -27,27 +27,30 @@ class RecipeMetadataRow extends StatelessWidget {
     final l10n = context.l10n;
     final items = <Widget>[];
 
-    if (prepTime != null) {
+    final formattedPrepTime = _formatDuration(prepTime);
+    final formattedCookTime = _formatDuration(cookTime);
+
+    if (formattedPrepTime != null) {
       items.add(
         _buildChip(
           theme,
           Icons.timer_outlined,
-          '${l10n.prepTime}: ${_formatDuration(prepTime!)}',
+          '${l10n.prepTime}: $formattedPrepTime',
         ),
       );
     }
 
-    if (cookTime != null) {
+    if (formattedCookTime != null) {
       items.add(
         _buildChip(
           theme,
           Icons.local_fire_department_outlined,
-          '${l10n.cookTime}: ${_formatDuration(cookTime!)}',
+          '${l10n.cookTime}: $formattedCookTime',
         ),
       );
     }
 
-    if (servings != null) {
+    if (servings != null && servings!.isNotEmpty) {
       items.add(
         _buildChip(
           theme,
@@ -94,11 +97,17 @@ class RecipeMetadataRow extends StatelessWidget {
   }
 
   /// Formats ISO 8601 duration (e.g., PT15M) to human-readable format.
-  String _formatDuration(String isoDuration) {
+  /// Returns null if the duration is invalid or contains no valid time parts.
+  String? _formatDuration(String? isoDuration) {
+    if (isoDuration == null || isoDuration.isEmpty) return null;
+
+    // Check for invalid patterns like "PTnullM" or "PTnullH"
+    if (isoDuration.contains('null')) return null;
+
     final regex = RegExp(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?');
     final match = regex.firstMatch(isoDuration);
 
-    if (match == null) return isoDuration;
+    if (match == null) return null;
 
     final hours = match.group(1);
     final minutes = match.group(2);
@@ -107,6 +116,6 @@ class RecipeMetadataRow extends StatelessWidget {
     if (hours != null) parts.add('${hours}h');
     if (minutes != null) parts.add('${minutes}m');
 
-    return parts.isEmpty ? isoDuration : parts.join(' ');
+    return parts.isEmpty ? null : parts.join(' ');
   }
 }

@@ -45,7 +45,7 @@ void main() {
           Recipe(id: '1', name: 'Recipe 1'),
           Recipe(id: '2', name: 'Recipe 2'),
         ];
-        when(() => mockImportService.listRecipes(limit: 25, offset: 0)).thenAnswer((_) async => recipes);
+        when(() => mockImportService.listRecipes()).thenAnswer((_) async => recipes);
 
         // Act
         await controller.loadRecipes();
@@ -57,7 +57,7 @@ void main() {
 
       test('sets error on failure', () async {
         // Arrange
-        when(() => mockImportService.listRecipes(limit: 25, offset: 0)).thenThrow(Exception('Network error'));
+        when(() => mockImportService.listRecipes()).thenThrow(Exception('Network error'));
 
         // Act
         await controller.loadRecipes();
@@ -72,7 +72,7 @@ void main() {
       test('empties recipes list', () async {
         // Arrange
         const recipes = [Recipe(id: '1', name: 'Recipe 1')];
-        when(() => mockImportService.listRecipes(limit: 25, offset: 0)).thenAnswer((_) async => recipes);
+        when(() => mockImportService.listRecipes()).thenAnswer((_) async => recipes);
         await controller.loadRecipes();
 
         // Act
@@ -91,7 +91,7 @@ void main() {
           Recipe(id: '1', name: 'Recipe 1'),
           Recipe(id: '2', name: 'Recipe 2'),
         ];
-        when(() => mockImportService.listRecipes(limit: 25, offset: 0)).thenAnswer((_) async => recipes);
+        when(() => mockImportService.listRecipes()).thenAnswer((_) async => recipes);
         when(() => mockImportService.deleteRecipe('1')).thenAnswer((_) async {});
         await controller.loadRecipes();
 
@@ -253,6 +253,262 @@ void main() {
         expect(controller.importState.value, ImportState.idle);
         expect(controller.activeRequest.value, isNull);
         expect(controller.previewRecipe.value, isNull);
+      });
+    });
+
+    group('pendingImports', () {
+      test('starts empty', () {
+        expect(controller.pendingImports.value, isEmpty);
+      });
+
+      test('adds to pending list when importing', () async {
+        // Arrange
+        const inputUrl = 'https://example.com/recipe';
+        const inputUserId = 'user-123';
+        final request = RecipeRequest(
+          id: 'test-id',
+          url: inputUrl,
+          status: RecipeRequestStatus.requested,
+          userId: inputUserId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        when(
+          () => mockImportService.importFromUrl(
+            url: inputUrl,
+            userId: inputUserId,
+          ),
+        ).thenAnswer((_) async => request);
+        when(
+          () => mockImportService.subscribeToRequest(request.id),
+        ).thenAnswer((_) => const Stream.empty());
+
+        // Act
+        await controller.importRecipe(url: inputUrl, userId: inputUserId);
+
+        // Assert
+        expect(controller.pendingImports.value, hasLength(1));
+        expect(controller.pendingImports.value.first.request.id, request.id);
+      });
+
+      test('removes from pending when import completes', () async {
+        // Arrange
+        const inputUrl = 'https://example.com/recipe';
+        const inputUserId = 'user-123';
+        final request = RecipeRequest(
+          id: 'test-id',
+          url: inputUrl,
+          status: RecipeRequestStatus.completed,
+          userId: inputUserId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        const recipe = Recipe(id: 'recipe-id', name: 'Test Recipe');
+
+        when(
+          () => mockImportService.importFromUrl(
+            url: inputUrl,
+            userId: inputUserId,
+          ),
+        ).thenAnswer((_) async => request);
+        when(
+          () => mockImportService.subscribeToRequest(request.id),
+        ).thenAnswer((_) => Stream.value(request));
+        when(
+          () => mockImportService.getExtractedRecipe(request.id),
+        ).thenAnswer((_) async => recipe);
+
+        // Act
+        await controller.importRecipe(url: inputUrl, userId: inputUserId);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Assert
+        expect(controller.pendingImports.value, isEmpty);
+        expect(controller.recipes.value, contains(recipe));
+      });
+
+      test('sets error on pending import when extraction fails', () async {
+        // Arrange
+        const inputUrl = 'https://example.com/recipe';
+        const inputUserId = 'user-123';
+        final request = RecipeRequest(
+          id: 'test-id',
+          url: inputUrl,
+          status: RecipeRequestStatus.failed,
+          userId: inputUserId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        when(
+          () => mockImportService.importFromUrl(
+            url: inputUrl,
+            userId: inputUserId,
+          ),
+        ).thenAnswer((_) async => request);
+        when(
+          () => mockImportService.subscribeToRequest(request.id),
+        ).thenAnswer((_) => Stream.value(request));
+
+        // Act
+        await controller.importRecipe(url: inputUrl, userId: inputUserId);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Assert
+        expect(controller.pendingImports.value, hasLength(1));
+        expect(controller.pendingImports.value.first.hasError, isTrue);
+      });
+
+      test('dismissPendingImport removes from list', () async {
+        // Arrange
+        const inputUrl = 'https://example.com/recipe';
+        const inputUserId = 'user-123';
+        final request = RecipeRequest(
+          id: 'test-id',
+          url: inputUrl,
+          status: RecipeRequestStatus.requested,
+          userId: inputUserId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        when(
+          () => mockImportService.importFromUrl(
+            url: inputUrl,
+            userId: inputUserId,
+          ),
+        ).thenAnswer((_) async => request);
+        when(
+          () => mockImportService.subscribeToRequest(request.id),
+        ).thenAnswer((_) => const Stream.empty());
+
+        await controller.importRecipe(url: inputUrl, userId: inputUserId);
+        expect(controller.pendingImports.value, hasLength(1));
+
+        // Act
+        controller.dismissPendingImport(request.id);
+
+        // Assert
+        expect(controller.pendingImports.value, isEmpty);
+      });
+    });
+
+    group('concurrent imports', () {
+      test('supports multiple concurrent pending imports', () async {
+        // Arrange
+        const userId = 'user-123';
+        final request1 = RecipeRequest(
+          id: 'request-1',
+          url: 'https://example.com/recipe1',
+          status: RecipeRequestStatus.requested,
+          userId: userId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        final request2 = RecipeRequest(
+          id: 'request-2',
+          url: 'https://example.com/recipe2',
+          status: RecipeRequestStatus.requested,
+          userId: userId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        when(
+          () => mockImportService.importFromUrl(
+            url: request1.url,
+            userId: userId,
+          ),
+        ).thenAnswer((_) async => request1);
+        when(
+          () => mockImportService.importFromUrl(
+            url: request2.url,
+            userId: userId,
+          ),
+        ).thenAnswer((_) async => request2);
+        when(
+          () => mockImportService.subscribeToRequest(request1.id),
+        ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockImportService.subscribeToRequest(request2.id),
+        ).thenAnswer((_) => const Stream.empty());
+
+        // Act
+        await controller.importRecipe(url: request1.url, userId: userId);
+        await controller.importRecipe(url: request2.url, userId: userId);
+
+        // Assert
+        expect(controller.pendingImports.value, hasLength(2));
+      });
+
+      test('completes imports independently', () async {
+        // Arrange
+        const userId = 'user-123';
+        final streamController1 = StreamController<RecipeRequest>();
+        final streamController2 = StreamController<RecipeRequest>();
+        final request1 = RecipeRequest(
+          id: 'request-1',
+          url: 'https://example.com/recipe1',
+          status: RecipeRequestStatus.requested,
+          userId: userId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        final request2 = RecipeRequest(
+          id: 'request-2',
+          url: 'https://example.com/recipe2',
+          status: RecipeRequestStatus.requested,
+          userId: userId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        const recipe1 = Recipe(id: 'recipe-1', name: 'Recipe 1');
+
+        when(
+          () => mockImportService.importFromUrl(
+            url: request1.url,
+            userId: userId,
+          ),
+        ).thenAnswer((_) async => request1);
+        when(
+          () => mockImportService.importFromUrl(
+            url: request2.url,
+            userId: userId,
+          ),
+        ).thenAnswer((_) async => request2);
+        when(
+          () => mockImportService.subscribeToRequest(request1.id),
+        ).thenAnswer((_) => streamController1.stream);
+        when(
+          () => mockImportService.subscribeToRequest(request2.id),
+        ).thenAnswer((_) => streamController2.stream);
+        when(
+          () => mockImportService.getExtractedRecipe(request1.id),
+        ).thenAnswer((_) async => recipe1);
+
+        // Start both imports
+        await controller.importRecipe(url: request1.url, userId: userId);
+        await controller.importRecipe(url: request2.url, userId: userId);
+        expect(controller.pendingImports.value, hasLength(2));
+
+        // Complete first import
+        streamController1.add(
+          request1.copyWith(status: RecipeRequestStatus.completed),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Assert first completed, second still pending
+        expect(controller.pendingImports.value, hasLength(1));
+        expect(
+          controller.pendingImports.value.first.request.id,
+          request2.id,
+        );
+        expect(controller.recipes.value, contains(recipe1));
+
+        // Cleanup
+        await streamController1.close();
+        await streamController2.close();
       });
     });
   });

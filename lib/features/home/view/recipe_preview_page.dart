@@ -16,27 +16,23 @@ class RecipePreviewPage extends StatefulWidget {
     this.onCancel,
     this.isProcessing = false,
     this.isEditable = false,
-    this.isNewRecipe = false,
     super.key,
   });
 
   /// The recipe to preview.
   final Recipe recipe;
 
-  /// Callback when save (for new) or delete (for existing) is pressed.
+  /// Callback when delete is pressed.
   final VoidCallback onSaveOrDelete;
 
   /// Callback when cancel is pressed.
   final VoidCallback? onCancel;
 
-  /// Whether save/delete is in progress.
+  /// Whether delete is in progress.
   final bool isProcessing;
 
   /// Whether fields are editable (for partial data).
   final bool isEditable;
-
-  /// Whether this is a new recipe being imported (show save) or existing (show delete).
-  final bool isNewRecipe;
 
   @override
   State<RecipePreviewPage> createState() => _RecipePreviewPageState();
@@ -169,34 +165,20 @@ class _RecipePreviewPageState extends State<RecipePreviewPage> {
         ),
       ),
       child: SafeArea(
-        child: widget.isNewRecipe
-            ? FButton(
-                onPress: widget.isProcessing ? null : widget.onSaveOrDelete,
-                child: widget.isProcessing
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: theme.colors.primaryForeground,
-                        ),
-                      )
-                    : Text(l10n.saveToCollection),
-              )
-            : FButton(
-                style: FButtonStyle.destructive(),
-                onPress: widget.isProcessing ? null : widget.onSaveOrDelete,
-                child: widget.isProcessing
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: theme.colors.primaryForeground,
-                        ),
-                      )
-                    : Text(l10n.deleteRecipe),
-              ),
+        child: FButton(
+          style: FButtonStyle.destructive(),
+          onPress: widget.isProcessing ? null : widget.onSaveOrDelete,
+          child: widget.isProcessing
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: theme.colors.primaryForeground,
+                  ),
+                )
+              : Text(l10n.deleteRecipe),
+        ),
       ),
     );
   }

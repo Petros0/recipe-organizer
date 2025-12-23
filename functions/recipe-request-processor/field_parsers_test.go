@@ -473,6 +473,26 @@ func TestParseStringOrArray(t *testing.T) {
 			input:    []interface{}{"Dessert"},
 			expected: []string{"Dessert"},
 		},
+		{
+			name:     "integer number (recipeYield)",
+			input:    float64(4),
+			expected: []string{"4"},
+		},
+		{
+			name:     "float number",
+			input:    float64(2.5),
+			expected: []string{"2.5"},
+		},
+		{
+			name:     "array with mixed strings and numbers",
+			input:    []interface{}{"4 servings", float64(8)},
+			expected: []string{"4 servings", "8"},
+		},
+		{
+			name:     "array with only numbers",
+			input:    []interface{}{float64(4), float64(6)},
+			expected: []string{"4", "6"},
+		},
 	}
 
 	for _, tt := range tests {
