@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/appwrite/sdk-for-go/client"
-	"github.com/appwrite/sdk-for-go/databases"
+	"github.com/appwrite/sdk-for-go/appwrite"
 	"github.com/appwrite/sdk-for-go/id"
 	"github.com/appwrite/sdk-for-go/permission"
 	"github.com/appwrite/sdk-for-go/role"
+	"github.com/appwrite/sdk-for-go/tablesdb"
 )
 
 // Status constants for recipe request tracking
@@ -31,7 +31,7 @@ type RecipeRequestStore interface {
 
 // RecipeRequestClient handles database operations for recipe requests
 type RecipeRequestClient struct {
-	databases *databases.Databases
+	tablesdb *tablesdb.TablesDB
 }
 
 // NewRecipeRequestClient creates a new RecipeRequestClient with Appwrite configuration
@@ -48,13 +48,14 @@ func NewRecipeRequestClient() *RecipeRequestClient {
 
 	apiKey := os.Getenv("APPWRITE_API_KEY")
 
-	appwriteClient := client.New()
-	appwriteClient.Endpoint = endpoint
-	appwriteClient.AddHeader("X-Appwrite-Project", projectID)
-	appwriteClient.AddHeader("X-Appwrite-Key", apiKey)
+	client := appwrite.NewClient(
+		appwrite.WithEndpoint(endpoint),
+		appwrite.WithProject(projectID),
+		appwrite.WithKey(apiKey),
+	)
 
 	return &RecipeRequestClient{
-		databases: databases.New(appwriteClient),
+		tablesdb: appwrite.NewTablesDB(client),
 	}
 }
 
@@ -73,12 +74,12 @@ func (c *RecipeRequestClient) CreateRequest(url, userID string) (string, error) 
 		permission.Delete(role.User(userID, "")),
 	}
 
-	doc, err := c.databases.CreateDocument(
+	doc, err := c.tablesdb.CreateRow(
 		DatabaseID,
 		CollectionID,
 		id.Unique(),
 		data,
-		c.databases.WithCreateDocumentPermissions(permissions),
+		c.tablesdb.WithCreateRowPermissions(permissions),
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to create recipe request document: %w", err)

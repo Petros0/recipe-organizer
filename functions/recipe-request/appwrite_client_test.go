@@ -87,8 +87,8 @@ func TestNewRecipeRequestClient(t *testing.T) {
 	if client == nil {
 		t.Error("expected non-nil client")
 	}
-	if client.databases == nil {
-		t.Error("expected non-nil databases service")
+	if client.tablesdb == nil {
+		t.Error("expected non-nil tablesdb service")
 	}
 }
 
