@@ -130,7 +130,7 @@ class HomeController {
 
   void _subscribeToImport(String requestId, String userId) {
     // Cancel any existing subscription for this request
-    _pendingSubscriptions[requestId]?.cancel();
+    unawaited(_pendingSubscriptions[requestId]?.cancel());
 
     _pendingSubscriptions[requestId] = _importService
         .subscribeToRequest(requestId)
@@ -185,7 +185,7 @@ class HomeController {
         }
 
         // Clean up subscription
-        _pendingSubscriptions[requestId]?.cancel();
+        unawaited(_pendingSubscriptions[requestId]?.cancel());
         _pendingSubscriptions.remove(requestId);
       } else {
         _onImportError(requestId, 'Recipe not found');
@@ -234,7 +234,7 @@ class HomeController {
 
   /// Dismisses a pending import (removes from list).
   void dismissPendingImport(String requestId) {
-    _pendingSubscriptions[requestId]?.cancel();
+    unawaited(_pendingSubscriptions[requestId]?.cancel());
     _pendingSubscriptions.remove(requestId);
     _pendingImports.value = _pendingImports.value.where((p) => p.request.id != requestId).toList();
   }
@@ -272,7 +272,7 @@ class HomeController {
   }
 
   void _resetImportState() {
-    _requestSubscription?.cancel();
+    unawaited(_requestSubscription?.cancel());
     _requestSubscription = null;
     _importState.value = ImportState.idle;
     _activeRequest.value = null;
@@ -287,9 +287,9 @@ class HomeController {
 
   /// Disposes resources.
   void dispose() {
-    _requestSubscription?.cancel();
+    unawaited(_requestSubscription?.cancel());
     for (final subscription in _pendingSubscriptions.values) {
-      subscription.cancel();
+      unawaited(subscription.cancel());
     }
     _pendingSubscriptions.clear();
   }

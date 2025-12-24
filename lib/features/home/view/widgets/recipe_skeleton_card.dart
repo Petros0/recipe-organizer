@@ -75,7 +75,7 @@ class RecipeSkeletonCard extends StatelessWidget {
                     // Status row
                     Row(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 12,
                           height: 12,
                           child: CircularProgressIndicator(

@@ -35,7 +35,7 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
     _controller = getIt<HomeController>();
     _authController = getIt<AuthController>();
     // Load recipes from the database
-    _controller.loadRecipes();
+    unawaited(_controller.loadRecipes());
   }
 
   Future<void> _showImportDialog() async {
@@ -135,14 +135,16 @@ class _HomePageState extends State<HomePage> with SignalsMixin {
   }
 
   void _onRecipeTap(Recipe recipe) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => RecipePreviewPage(
-          recipe: recipe,
-          onSaveOrDelete: () async {
-            await _controller.deleteRecipe(recipe.id);
-            if (mounted) Navigator.of(context).pop();
-          },
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => RecipePreviewPage(
+            recipe: recipe,
+            onSaveOrDelete: () async {
+              await _controller.deleteRecipe(recipe.id);
+              if (mounted) Navigator.of(context).pop();
+            },
+          ),
         ),
       ),
     );
