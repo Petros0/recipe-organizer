@@ -98,10 +98,13 @@ func (s *FirecrawlStrategy) Fetch(url string) (*Recipe, error) {
 
 // fetchWithHTML fetches the page HTML and parses JSON-LD
 func (s *FirecrawlStrategy) fetchWithHTML(app *firecrawl.FirecrawlApp, url string) (*Recipe, error) {
-	// Request HTML format
+	// Request HTML format with cache bypass (maxAge=0 forces fresh scrape)
+	maxAge := 0
 	params := &firecrawl.ScrapeParams{
 		Formats: []string{"rawHtml"},
+		MaxAge:  &maxAge,
 	}
+	logFirecrawl("Fetching with maxAge=0 (cache bypass)")
 
 	result, err := app.ScrapeURL(url, params)
 	if err != nil {

@@ -79,8 +79,11 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 
 	Context.Log(fmt.Sprintf("Processing request %s for URL: %s", payload.ID, payload.URL))
 
-	// Set up Firecrawl logger for detailed extraction logging
+	// Set up loggers for detailed extraction logging
 	SetFirecrawlLogger(func(msgs ...interface{}) {
+		Context.Log(msgs...)
+	})
+	SetParserLogger(func(msgs ...interface{}) {
 		Context.Log(msgs...)
 	})
 

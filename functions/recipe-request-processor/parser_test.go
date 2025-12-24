@@ -253,6 +253,8 @@ func TestExtractRecipeFromObject(t *testing.T) {
 		wantDescription  *string
 		wantIngredients  int
 		wantInstructions int
+		wantYield        []string
+		wantCategory     []string
 	}{
 		{
 			name: "full recipe",
@@ -327,6 +329,42 @@ func TestExtractRecipeFromObject(t *testing.T) {
 			wantName:       "Schema Recipe",
 			wantImageCount: 1,
 		},
+		{
+			name: "recipeYield as string",
+			obj: map[string]interface{}{
+				"@type":       "Recipe",
+				"name":        "Yield Test",
+				"image":       "img.jpg",
+				"recipeYield": "6",
+			},
+			wantName:       "Yield Test",
+			wantImageCount: 1,
+			wantYield:      []string{"6"},
+		},
+		{
+			name: "recipeYield as number",
+			obj: map[string]interface{}{
+				"@type":       "Recipe",
+				"name":        "Yield Number Test",
+				"image":       "img.jpg",
+				"recipeYield": float64(4),
+			},
+			wantName:       "Yield Number Test",
+			wantImageCount: 1,
+			wantYield:      []string{"4"},
+		},
+		{
+			name: "recipeCategory as number",
+			obj: map[string]interface{}{
+				"@type":          "Recipe",
+				"name":           "Category Number Test",
+				"image":          "img.jpg",
+				"recipeCategory": float64(19),
+			},
+			wantName:       "Category Number Test",
+			wantImageCount: 1,
+			wantCategory:   []string{"19"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -366,6 +404,30 @@ func TestExtractRecipeFromObject(t *testing.T) {
 
 			if len(recipe.RecipeInstructions) != tt.wantInstructions {
 				t.Errorf("Instructions count = %d, want %d", len(recipe.RecipeInstructions), tt.wantInstructions)
+			}
+
+			if len(tt.wantYield) > 0 {
+				if len(recipe.RecipeYield) != len(tt.wantYield) {
+					t.Errorf("RecipeYield = %v, want %v", recipe.RecipeYield, tt.wantYield)
+				} else {
+					for i, v := range tt.wantYield {
+						if recipe.RecipeYield[i] != v {
+							t.Errorf("RecipeYield[%d] = %q, want %q", i, recipe.RecipeYield[i], v)
+						}
+					}
+				}
+			}
+
+			if len(tt.wantCategory) > 0 {
+				if len(recipe.RecipeCategory) != len(tt.wantCategory) {
+					t.Errorf("RecipeCategory = %v, want %v", recipe.RecipeCategory, tt.wantCategory)
+				} else {
+					for i, v := range tt.wantCategory {
+						if recipe.RecipeCategory[i] != v {
+							t.Errorf("RecipeCategory[%d] = %q, want %q", i, recipe.RecipeCategory[i], v)
+						}
+					}
+				}
 			}
 		})
 	}
