@@ -4,10 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:recipe_organizer/features/home/data/recipe_repository.dart';
 
-class MockDatabases extends Mock implements Databases {}
+class MockTablesDB extends Mock implements TablesDB {}
 
-class FakeDocument extends Fake implements Document {
-  FakeDocument({
+class FakeRow extends Fake implements Row {
+  FakeRow({
     required String id,
     required Map<String, dynamic> data,
   }) : _id = id,
@@ -23,22 +23,22 @@ class FakeDocument extends Fake implements Document {
   Map<String, dynamic> get data => _data;
 }
 
-class FakeDocumentList extends Fake implements DocumentList {
-  FakeDocumentList(this._documents);
+class FakeRowList extends Fake implements RowList {
+  FakeRowList(this._rows);
 
-  final List<Document> _documents;
+  final List<Row> _rows;
 
   @override
-  List<Document> get documents => _documents;
+  List<Row> get rows => _rows;
 }
 
 void main() {
   late RecipeRepository repository;
-  late MockDatabases mockDatabases;
+  late MockTablesDB mockTablesDB;
 
   setUp(() {
-    mockDatabases = MockDatabases();
-    repository = RecipeRepository(mockDatabases);
+    mockTablesDB = MockTablesDB();
+    repository = RecipeRepository(mockTablesDB);
   });
 
   group('RecipeRepository', () {
@@ -46,7 +46,7 @@ void main() {
       test('returns recipe when found', () async {
         // Arrange
         const requestId = 'test-request-id';
-        final fakeDoc = FakeDocument(
+        final fakeRow = FakeRow(
           id: 'recipe-id',
           data: {
             'name': 'Test Recipe',
@@ -57,12 +57,12 @@ void main() {
         );
 
         when(
-          () => mockDatabases.listDocuments(
+          () => mockTablesDB.listRows(
             databaseId: any(named: 'databaseId'),
-            collectionId: any(named: 'collectionId'),
+            tableId: any(named: 'tableId'),
             queries: any(named: 'queries'),
           ),
-        ).thenAnswer((_) async => FakeDocumentList([fakeDoc]));
+        ).thenAnswer((_) async => FakeRowList([fakeRow]));
 
         // Act
         final result = await repository.getRecipeByRequestId(requestId);
@@ -78,12 +78,12 @@ void main() {
         const requestId = 'test-request-id';
 
         when(
-          () => mockDatabases.listDocuments(
+          () => mockTablesDB.listRows(
             databaseId: any(named: 'databaseId'),
-            collectionId: any(named: 'collectionId'),
+            tableId: any(named: 'tableId'),
             queries: any(named: 'queries'),
           ),
-        ).thenAnswer((_) async => FakeDocumentList([]));
+        ).thenAnswer((_) async => FakeRowList([]));
 
         // Act
         final result = await repository.getRecipeByRequestId(requestId);
@@ -96,22 +96,22 @@ void main() {
     group('listRecipes', () {
       test('returns list of recipes', () async {
         // Arrange
-        final fakeDoc1 = FakeDocument(
+        final fakeRow1 = FakeRow(
           id: 'recipe-1',
           data: {'name': 'Recipe 1'},
         );
-        final fakeDoc2 = FakeDocument(
+        final fakeRow2 = FakeRow(
           id: 'recipe-2',
           data: {'name': 'Recipe 2'},
         );
 
         when(
-          () => mockDatabases.listDocuments(
+          () => mockTablesDB.listRows(
             databaseId: any(named: 'databaseId'),
-            collectionId: any(named: 'collectionId'),
+            tableId: any(named: 'tableId'),
             queries: any(named: 'queries'),
           ),
-        ).thenAnswer((_) async => FakeDocumentList([fakeDoc1, fakeDoc2]));
+        ).thenAnswer((_) async => FakeRowList([fakeRow1, fakeRow2]));
 
         // Act
         final result = await repository.listRecipes();
@@ -125,12 +125,12 @@ void main() {
       test('returns empty list when no recipes', () async {
         // Arrange
         when(
-          () => mockDatabases.listDocuments(
+          () => mockTablesDB.listRows(
             databaseId: any(named: 'databaseId'),
-            collectionId: any(named: 'collectionId'),
+            tableId: any(named: 'tableId'),
             queries: any(named: 'queries'),
           ),
-        ).thenAnswer((_) async => FakeDocumentList([]));
+        ).thenAnswer((_) async => FakeRowList([]));
 
         // Act
         final result = await repository.listRecipes();

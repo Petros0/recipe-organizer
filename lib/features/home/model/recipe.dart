@@ -73,6 +73,33 @@ class Recipe {
     );
   }
 
+  /// Creates a [Recipe] from an Appwrite Row (TablesDB).
+  factory Recipe.fromRow(Row row) {
+    return Recipe(
+      id: row.$id,
+      name: row.data['name'] as String,
+      description: row.data['description'] as String?,
+      images: (row.data['image'] as List<dynamic>?)?.cast<String>() ?? [],
+      prepTime: row.data['prep_time'] as String?,
+      cookTime: row.data['cook_time'] as String?,
+      totalTime: row.data['total_time'] as String?,
+      recipeYield: (row.data['recipe_yield'] as List<dynamic>?)?.cast<String>(),
+      ingredients: (row.data['ingredients'] as List<dynamic>?)?.cast<String>() ?? [],
+      instructions: (row.data['instructions'] as List<dynamic>?)?.cast<String>() ?? [],
+      authorName: row.data['author_name'] as String?,
+      authorUrl: row.data['author_url'] as String?,
+      recipeCategory: (row.data['recipe_category'] as List<dynamic>?)?.cast<String>(),
+      recipeCuisine: (row.data['recipe_cuisine'] as List<dynamic>?)?.cast<String>(),
+      keywords: row.data['keywords'] as String?,
+      datePublished: row.data['date_published'] as String?,
+      dateModified: row.data['date_modified'] as String?,
+      nutrition: NutritionInfo.fromMap(row.data),
+      sourceUrl: row.data['source_url'] as String?,
+      recipeRequestId: row.data['fk_recipe_request'] as String?,
+      userId: row.data['user_id'] as String?,
+    );
+  }
+
   /// Unique identifier for the recipe.
   final String id;
 

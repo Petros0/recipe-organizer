@@ -20,9 +20,9 @@ void configureDependencies() {
       final client = getIt<Client>();
       return Functions(client);
     })
-    ..registerLazySingleton<Databases>(() {
+    ..registerLazySingleton<TablesDB>(() {
       final client = getIt<Client>();
-      return Databases(client);
+      return TablesDB(client);
     })
     ..registerLazySingleton<Realtime>(() {
       final client = getIt<Client>();
@@ -51,8 +51,8 @@ void configureDependencies() {
       return RecipeRequestRepository(functions);
     })
     ..registerLazySingleton<RecipeRepository>(() {
-      final databases = getIt<Databases>();
-      return RecipeRepository(databases);
+      final tablesDB = getIt<TablesDB>();
+      return RecipeRepository(tablesDB);
     })
     ..registerLazySingleton<RecipeImportService>(() {
       final requestRepo = getIt<RecipeRequestRepository>();

@@ -2,30 +2,30 @@ import 'package:appwrite/appwrite.dart';
 import 'package:recipe_organizer/core/appwrite/appwrite_constants.dart';
 import 'package:recipe_organizer/features/home/model/recipe.dart';
 
-/// Repository for recipe CRUD operations using Appwrite Databases.
+/// Repository for recipe CRUD operations using Appwrite TablesDB.
 class RecipeRepository {
   /// Creates a new [RecipeRepository] instance.
-  RecipeRepository(this._databases);
+  RecipeRepository(this._tablesDB);
 
-  final Databases _databases;
+  final TablesDB _tablesDB;
 
   /// Gets a recipe by its associated recipe request ID.
   ///
   /// Returns null if no recipe is found.
   /// Also populates the sourceUrl from the recipe request.
   Future<Recipe?> getRecipeByRequestId(String requestId) async {
-    final response = await _databases.listDocuments(
+    final response = await _tablesDB.listRows(
       databaseId: AppwriteConstants.databaseId,
-      collectionId: AppwriteConstants.recipeCollectionId,
+      tableId: AppwriteConstants.recipeCollectionId,
       queries: [
         Query.equal('fk_recipe_request', requestId),
         Query.limit(1),
       ],
     );
 
-    if (response.documents.isEmpty) return null;
+    if (response.rows.isEmpty) return null;
 
-    var recipe = Recipe.fromDocument(response.documents.first);
+    var recipe = Recipe.fromRow(response.rows.first);
 
     // Fetch source URL from recipe request if not already set
     if (recipe.sourceUrl == null && recipe.recipeRequestId != null) {
@@ -41,9 +41,9 @@ class RecipeRepository {
   /// Lists all recipes, ordered by creation date (newest first).
   /// Also populates the sourceUrl from the recipe requests.
   Future<List<Recipe>> listRecipes({int limit = 25, int offset = 0}) async {
-    final response = await _databases.listDocuments(
+    final response = await _tablesDB.listRows(
       databaseId: AppwriteConstants.databaseId,
-      collectionId: AppwriteConstants.recipeCollectionId,
+      tableId: AppwriteConstants.recipeCollectionId,
       queries: [
         Query.limit(limit),
         Query.offset(offset),
@@ -51,7 +51,7 @@ class RecipeRepository {
       ],
     );
 
-    final recipes = response.documents.map(Recipe.fromDocument).toList();
+    final recipes = response.rows.map(Recipe.fromRow).toList();
 
     // Populate source URLs from recipe requests
     return Future.wait(recipes.map(_populateSourceUrl));
@@ -71,12 +71,12 @@ class RecipeRepository {
 
   Future<String?> _getSourceUrlFromRequest(String requestId) async {
     try {
-      final doc = await _databases.getDocument(
+      final row = await _tablesDB.getRow(
         databaseId: AppwriteConstants.databaseId,
-        collectionId: AppwriteConstants.recipeRequestCollectionId,
-        documentId: requestId,
+        tableId: AppwriteConstants.recipeRequestCollectionId,
+        rowId: requestId,
       );
-      return doc.data['url'] as String?;
+      return row.data['url'] as String?;
     } on AppwriteException {
       return null;
     }
@@ -85,12 +85,12 @@ class RecipeRepository {
   /// Gets a recipe by its ID.
   Future<Recipe?> getRecipeById(String id) async {
     try {
-      final doc = await _databases.getDocument(
+      final row = await _tablesDB.getRow(
         databaseId: AppwriteConstants.databaseId,
-        collectionId: AppwriteConstants.recipeCollectionId,
-        documentId: id,
+        tableId: AppwriteConstants.recipeCollectionId,
+        rowId: id,
       );
-      var recipe = Recipe.fromDocument(doc);
+      var recipe = Recipe.fromRow(row);
 
       // Fetch source URL from recipe request if not already set
       if (recipe.sourceUrl == null && recipe.recipeRequestId != null) {
@@ -108,10 +108,10 @@ class RecipeRepository {
 
   /// Deletes a recipe by its ID.
   Future<void> deleteRecipe(String id) async {
-    await _databases.deleteDocument(
+    await _tablesDB.deleteRow(
       databaseId: AppwriteConstants.databaseId,
-      collectionId: AppwriteConstants.recipeCollectionId,
-      documentId: id,
+      tableId: AppwriteConstants.recipeCollectionId,
+      rowId: id,
     );
   }
 }
