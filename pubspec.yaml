@@ -15,8 +15,8 @@ dependencies:
   flutter_bloc: ^9.1.1
   flutter_localizations:
     sdk: flutter
-  forui: ^0.16.0
-  forui_assets: ^0.16.0
+  forui: ^0.17.0
+  forui_assets: ^0.17.1
   get_it: ^8.0.3
   intl: ^0.20.2
   shimmer: ^3.0.0
