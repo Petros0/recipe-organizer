@@ -12,11 +12,18 @@ import (
 )
 
 // HTTPClientStrategy implements FetchStrategy using standard HTTP client
-type HTTPClientStrategy struct{}
+type HTTPClientStrategy struct {
+	logger *Logger
+}
 
 // Name returns the strategy name for logging
 func (s *HTTPClientStrategy) Name() string {
 	return "HTTP Client"
+}
+
+// NewHTTPClientStrategy creates a new HTTPClientStrategy with the given logger
+func NewHTTPClientStrategy(logger *Logger) *HTTPClientStrategy {
+	return &HTTPClientStrategy{logger: logger}
 }
 
 // CanRetry returns true if the error indicates bot protection (403/429) or no JSON-LD found
@@ -31,6 +38,8 @@ func (s *HTTPClientStrategy) CanRetry(err error) bool {
 
 // Fetch fetches HTML from URL and extracts Recipe JSON-LD using HTTP client
 func (s *HTTPClientStrategy) Fetch(urlStr string) (*Recipe, error) {
+	s.logInfo("Starting HTTP fetch")
+
 	// Create cookie jar to handle sessions and cookies
 	jar, err := cookiejar.New(nil)
 	if err != nil {
@@ -55,9 +64,12 @@ func (s *HTTPClientStrategy) Fetch(urlStr string) (*Recipe, error) {
 	// Fetch the page
 	resp, err := client.Do(req)
 	if err != nil {
+		s.logError("HTTP request failed", map[string]interface{}{"error": err.Error()})
 		return nil, fmt.Errorf("failed to fetch URL: %w", err)
 	}
 	defer resp.Body.Close()
+
+	s.logInfo("HTTP response received", map[string]interface{}{"status_code": resp.StatusCode})
 
 	// Check status code
 	if resp.StatusCode != http.StatusOK {
@@ -70,18 +82,44 @@ func (s *HTTPClientStrategy) Fetch(urlStr string) (*Recipe, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
+	s.logInfo("Parsing HTML for JSON-LD", map[string]interface{}{"body_size": len(body)})
+
 	// Extract recipe from HTML body
-	recipe, err := extractRecipeFromHTML(string(body))
+	recipe, err := extractRecipeFromHTML(string(body), s.logger)
 	if err != nil {
 		return nil, err
 	}
 
 	// If no recipe found, return ErrNoJSONLD so we can retry with Firecrawl
 	if recipe == nil {
+		s.logInfo("No JSON-LD recipe found in HTML")
 		return nil, ErrNoJSONLD
 	}
 
+	s.logInfo("Recipe extracted successfully from JSON-LD")
 	return recipe, nil
+}
+
+// logInfo logs an info message if logger is available
+func (s *HTTPClientStrategy) logInfo(msg string, fields ...map[string]interface{}) {
+	if s.logger != nil {
+		var f map[string]interface{}
+		if len(fields) > 0 {
+			f = fields[0]
+		}
+		s.logger.Info("http_client", msg, f)
+	}
+}
+
+// logError logs an error message if logger is available
+func (s *HTTPClientStrategy) logError(msg string, fields ...map[string]interface{}) {
+	if s.logger != nil {
+		var f map[string]interface{}
+		if len(fields) > 0 {
+			f = fields[0]
+		}
+		s.logger.Error("http_client", msg, f)
+	}
 }
 
 // setBrowserHeaders sets realistic browser headers to avoid bot detection

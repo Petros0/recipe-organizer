@@ -18,12 +18,14 @@ var ErrNoJSONLD = errors.New("no JSON-LD structured data found")
 // 2. Falls back to LLM extraction if no JSON-LD found (more expensive but works for any page)
 type FirecrawlStrategy struct {
 	apiKey string
+	logger *Logger
 }
 
 // NewFirecrawlStrategy creates a new FirecrawlStrategy with the API key from environment
-func NewFirecrawlStrategy() *FirecrawlStrategy {
+func NewFirecrawlStrategy(logger *Logger) *FirecrawlStrategy {
 	return &FirecrawlStrategy{
 		apiKey: os.Getenv("FIRECRAWL_API_KEY"),
+		logger: logger,
 	}
 }
 
@@ -37,20 +39,25 @@ func (s *FirecrawlStrategy) CanRetry(err error) bool {
 	return false
 }
 
-// LogFunc is a function type for logging
-type LogFunc func(...interface{})
-
-// logger is used for internal logging within FirecrawlStrategy
-var fcLogger LogFunc
-
-// SetLogger sets the logger for FirecrawlStrategy
-func SetFirecrawlLogger(logger LogFunc) {
-	fcLogger = logger
+// logInfo logs an info message
+func (s *FirecrawlStrategy) logInfo(msg string, fields ...map[string]interface{}) {
+	if s.logger != nil {
+		var f map[string]interface{}
+		if len(fields) > 0 {
+			f = fields[0]
+		}
+		s.logger.Info("firecrawl", msg, f)
+	}
 }
 
-func logFirecrawl(msg string) {
-	if fcLogger != nil {
-		fcLogger("[Firecrawl] " + msg)
+// logError logs an error message
+func (s *FirecrawlStrategy) logError(msg string, fields ...map[string]interface{}) {
+	if s.logger != nil {
+		var f map[string]interface{}
+		if len(fields) > 0 {
+			f = fields[0]
+		}
+		s.logger.Error("firecrawl", msg, f)
 	}
 }
 
@@ -68,30 +75,36 @@ func (s *FirecrawlStrategy) Fetch(url string) (*Recipe, error) {
 	}
 
 	// Step 1: Try to get HTML and parse JSON-LD (cheaper approach)
-	logFirecrawl("Attempting HTML+JSON-LD extraction...")
+	s.logInfo("Attempting HTML+JSON-LD extraction")
 	recipe, err := s.fetchWithHTML(app, url)
 	if err == nil && recipe != nil {
-		logFirecrawl("SUCCESS: Recipe extracted via HTML+JSON-LD parsing")
+		s.logInfo("Recipe extracted via HTML+JSON-LD parsing", map[string]interface{}{
+			"method": "json-ld",
+		})
 		return recipe, nil
 	}
 
 	// Log why HTML extraction failed
 	if err != nil {
 		if errors.Is(err, ErrNoJSONLD) {
-			logFirecrawl("HTML extraction: No JSON-LD found on page")
+			s.logInfo("HTML extraction: No JSON-LD found on page")
 		} else {
-			logFirecrawl(fmt.Sprintf("HTML extraction failed: %v", err))
+			s.logError("HTML extraction failed", map[string]interface{}{
+				"error": err.Error(),
+			})
 			return nil, err
 		}
 	} else {
-		logFirecrawl("HTML extraction: Recipe was nil")
+		s.logInfo("HTML extraction: Recipe was nil")
 	}
 
 	// Step 2: Fall back to LLM extraction (for sites without JSON-LD)
-	logFirecrawl("Falling back to LLM extraction...")
+	s.logInfo("Falling back to LLM extraction")
 	recipe, err = s.fetchWithLLMExtraction(app, url)
 	if err == nil && recipe != nil {
-		logFirecrawl("SUCCESS: Recipe extracted via LLM")
+		s.logInfo("Recipe extracted via LLM", map[string]interface{}{
+			"method": "llm",
+		})
 	}
 	return recipe, err
 }
@@ -104,7 +117,9 @@ func (s *FirecrawlStrategy) fetchWithHTML(app *firecrawl.FirecrawlApp, url strin
 		Formats: []string{"rawHtml"},
 		MaxAge:  &maxAge,
 	}
-	logFirecrawl("Fetching with maxAge=0 (cache bypass)")
+	s.logInfo("Fetching HTML with cache bypass", map[string]interface{}{
+		"max_age": maxAge,
+	})
 
 	result, err := app.ScrapeURL(url, params)
 	if err != nil {
@@ -116,7 +131,7 @@ func (s *FirecrawlStrategy) fetchWithHTML(app *firecrawl.FirecrawlApp, url strin
 	}
 
 	// Extract recipe from HTML
-	recipe, err := extractRecipeFromHTML(result.RawHTML)
+	recipe, err := extractRecipeFromHTML(result.RawHTML, s.logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}

@@ -119,7 +119,7 @@ func TestExtractRecipeFromHTML(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recipe, err := extractRecipeFromHTML(tt.html)
+			recipe, err := extractRecipeFromHTML(tt.html, nil)
 
 			if tt.wantErr && err == nil {
 				t.Error("Expected error but got none")

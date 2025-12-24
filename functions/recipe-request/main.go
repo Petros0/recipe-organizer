@@ -54,19 +54,27 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		}, Context.Res.WithStatusCode(http.StatusBadRequest))
 	}
 
+	// Create structured logger with request context
+	logger := NewLogger(Context, targetURL, userID)
+	logger.Info("main", "Processing recipe request")
+
 	// Initialize recipe request client
 	requestClient := NewRecipeRequestClient()
 
 	// Create request record with REQUESTED status
 	documentID, err := requestClient.CreateRequest(targetURL, userID)
 	if err != nil {
-		Context.Error(fmt.Sprintf("Error creating request record: %v", err))
+		logger.Error("main", "Error creating request record", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return Context.Res.Json(ErrorResponse{
 			Error: "Error creating request record",
 		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
 
-	Context.Log(fmt.Sprintf("Created request record: %s for URL: %s", documentID, targetURL))
+	logger.WithDuration("main", "Request record created", map[string]interface{}{
+		"document_id": documentID,
+	})
 
 	// Return success response with document ID
 	return Context.Res.Json(SuccessResponse{

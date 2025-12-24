@@ -35,15 +35,13 @@ func TestFetchRecipe_Integration(t *testing.T) {
 
 	// Create strategy executor with HTTP client first, then Firecrawl as fallback
 	executor := NewStrategyExecutor(
-		&HTTPClientStrategy{},
-		NewFirecrawlStrategy(),
+		NewHTTPClientStrategy(nil),
+		NewFirecrawlStrategy(nil),
 	)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recipe, err := executor.Execute(tt.urlStr, func(msgs ...interface{}) {
-				t.Log(msgs...)
-			})
+			recipe, err := executor.Execute(tt.urlStr, nil)
 
 			if err != nil {
 				t.Logf("Could not fetch recipe from %s: %v", tt.urlStr, err)

@@ -8,22 +8,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// parserLogger is used for logging within parser functions
-var parserLogger LogFunc
-
-// SetParserLogger sets the logger for parser functions
-func SetParserLogger(logger LogFunc) {
-	parserLogger = logger
-}
-
-func logParser(msg string) {
-	if parserLogger != nil {
-		parserLogger("[Parser] " + msg)
-	}
-}
-
 // extractRecipeFromHTML extracts Recipe JSON-LD from HTML content
-func extractRecipeFromHTML(htmlContent string) (*Recipe, error) {
+func extractRecipeFromHTML(htmlContent string, logger *Logger) (*Recipe, error) {
 	// Parse HTML with goquery
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
 	if err != nil {
@@ -43,21 +29,32 @@ func extractRecipeFromHTML(htmlContent string) (*Recipe, error) {
 		}
 
 		// Log raw JSON-LD for debugging
-		logParser(fmt.Sprintf("Found JSON-LD script #%d (length: %d chars)", i+1, len(jsonLD)))
+		if logger != nil {
+			logger.Debug("parser", "Found JSON-LD script", map[string]interface{}{
+				"script_index": i + 1,
+				"length":       len(jsonLD),
+			})
+		}
 		// Log a snippet around recipeYield if present
-		if idx := strings.Index(jsonLD, "recipeYield"); idx >= 0 {
+		if idx := strings.Index(jsonLD, "recipeYield"); idx >= 0 && logger != nil {
 			start := idx
 			end := idx + 50
 			if end > len(jsonLD) {
 				end = len(jsonLD)
 			}
-			logParser(fmt.Sprintf("Raw recipeYield snippet: %s", jsonLD[start:end]))
+			logger.Debug("parser", "Found recipeYield field", map[string]interface{}{
+				"snippet": jsonLD[start:end],
+			})
 		}
 
 		// Try to parse as single object or array
 		var data interface{}
 		if err := json.Unmarshal([]byte(jsonLD), &data); err != nil {
-			logParser(fmt.Sprintf("Failed to parse JSON-LD: %v", err))
+			if logger != nil {
+				logger.Debug("parser", "Failed to parse JSON-LD", map[string]interface{}{
+					"error": err.Error(),
+				})
+			}
 			return // Skip invalid JSON
 		}
 
@@ -151,14 +148,9 @@ func extractRecipeFromObject(obj map[string]interface{}) *Recipe {
 	if totalTime := getStringPtr(obj, "totalTime"); totalTime != nil {
 		recipe.TotalTime = totalTime
 	}
-	// Log recipeYield before parsing
-	logParser(fmt.Sprintf("recipeYield raw value: %v (type: %T)", obj["recipeYield"], obj["recipeYield"]))
 	if yield := parseStringOrArray(obj["recipeYield"]); len(yield) > 0 {
 		recipe.RecipeYield = yield
-		logParser(fmt.Sprintf("recipeYield parsed: %v", yield))
-	} else {
-		logParser("recipeYield parsed to empty array")
-	}
+	} 
 	if category := parseStringOrArray(obj["recipeCategory"]); len(category) > 0 {
 		recipe.RecipeCategory = category
 	}

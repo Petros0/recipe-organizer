@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -23,11 +24,6 @@ type DocumentEventPayload struct {
 
 // This Appwrite function will be executed every time your function is triggered
 func Main(Context openruntimes.Context) openruntimes.Response {
-	// Handle ping endpoint
-	if Context.Req.Path == "/ping" {
-		return Context.Res.Text("Pong")
-	}
-
 	// Parse event payload - contains the full document data from the database event
 	var payload DocumentEventPayload
 	if bodyText := Context.Req.BodyText(); bodyText != "" {
@@ -38,22 +34,9 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		}
 	}
 
-	// Validate required fields from event payload
-	if payload.ID == "" {
+	if err := ValidatePayload(payload); err != nil {
 		return Context.Res.Json(ErrorResponse{
-			Error: "$id is required in event payload",
-		}, Context.Res.WithStatusCode(http.StatusBadRequest))
-	}
-
-	if payload.URL == "" {
-		return Context.Res.Json(ErrorResponse{
-			Error: "url is required in event payload",
-		}, Context.Res.WithStatusCode(http.StatusBadRequest))
-	}
-
-	if payload.UserID == "" {
-		return Context.Res.Json(ErrorResponse{
-			Error: "user_id is required in event payload",
+			Error: err.Error(),
 		}, Context.Res.WithStatusCode(http.StatusBadRequest))
 	}
 
@@ -66,43 +49,44 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 		})
 	}
 
+	// Create structured logger with request context
+	logger := NewLogger(Context, payload.ID, payload.URL, payload.UserID)
+	logger.Info("main", "Processing recipe request")
+
 	// Initialize recipe request client for tracking
 	requestClient := NewRecipeRequestClient()
 
 	// Update status to IN_PROGRESS before fetching
 	if err := requestClient.UpdateStatus(payload.ID, StatusInProgress); err != nil {
-		Context.Error(fmt.Sprintf("Error updating status to IN_PROGRESS: %v", err))
+		logger.Error("main", "Error updating status to IN_PROGRESS", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return Context.Res.Json(ErrorResponse{
 			Error: "Error updating status to IN_PROGRESS",
 		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
 
-	Context.Log(fmt.Sprintf("Processing request %s for URL: %s", payload.ID, payload.URL))
-
-	// Set up loggers for detailed extraction logging
-	SetFirecrawlLogger(func(msgs ...interface{}) {
-		Context.Log(msgs...)
-	})
-	SetParserLogger(func(msgs ...interface{}) {
-		Context.Log(msgs...)
-	})
+	logger.Info("main", "Status updated to IN_PROGRESS")
 
 	// Create strategy executor with HTTP client first, then Firecrawl as fallback
 	// Firecrawl handles bot protection and can use LLM extraction if no JSON-LD is found
 	executor := NewStrategyExecutor(
-		&HTTPClientStrategy{},
-		NewFirecrawlStrategy(),
+		NewHTTPClientStrategy(logger),
+		NewFirecrawlStrategy(logger),
 	)
 
 	// Fetch recipe using the strategy executor
-	Context.Log(fmt.Sprintf("Fetching recipe from: %s", payload.URL))
-	recipe, err := executor.Execute(payload.URL, Context.Log)
+	recipe, err := executor.Execute(payload.URL, logger)
 
 	if err != nil {
-		Context.Error(fmt.Sprintf("Error fetching recipe: %v", err))
+		logger.Error("main", "Error fetching recipe", map[string]interface{}{
+			"error": err.Error(),
+		})
 		// Update status to FAILED
 		if updateErr := requestClient.UpdateStatus(payload.ID, StatusFailed); updateErr != nil {
-			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
+			logger.Error("main", "Error updating status to FAILED", map[string]interface{}{
+				"error": updateErr.Error(),
+			})
 			return Context.Res.Json(ErrorResponse{
 				Error: "Error updating status to FAILED",
 			}, Context.Res.WithStatusCode(http.StatusInternalServerError))
@@ -114,9 +98,12 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	}
 
 	if recipe == nil {
+		logger.Error("main", "No recipe structured data found on page")
 		// Update status to FAILED when no recipe found
 		if updateErr := requestClient.UpdateStatus(payload.ID, StatusFailed); updateErr != nil {
-			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
+			logger.Error("main", "Error updating status to FAILED", map[string]interface{}{
+				"error": updateErr.Error(),
+			})
 			return Context.Res.Json(ErrorResponse{
 				Error: "Error updating status to FAILED",
 			}, Context.Res.WithStatusCode(http.StatusInternalServerError))
@@ -129,24 +116,51 @@ func Main(Context openruntimes.Context) openruntimes.Response {
 	// Save recipe to database
 	recipeID, err := requestClient.CreateRecipe(payload.ID, payload.UserID, recipe)
 	if err != nil {
-		Context.Error(fmt.Sprintf("Error saving recipe to database: %v", err))
+		logger.Error("main", "Error saving recipe to database", map[string]interface{}{
+			"error": err.Error(),
+		})
 		// Update status to FAILED since we couldn't save
 		if updateErr := requestClient.UpdateStatus(payload.ID, StatusFailed); updateErr != nil {
-			Context.Error(fmt.Sprintf("Error updating status to FAILED: %v", updateErr))
+			logger.Error("main", "Error updating status to FAILED", map[string]interface{}{
+				"error": updateErr.Error(),
+			})
 		}
 		return Context.Res.Json(ErrorResponse{
 			Error: "Failed to save recipe to database",
 		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
-	Context.Log(fmt.Sprintf("Recipe saved with ID: %s", recipeID))
+
+	logger.Info("main", "Recipe saved to database", map[string]interface{}{
+		"recipe_id": recipeID,
+	})
 
 	// Update status to COMPLETED on success
 	if err := requestClient.UpdateStatus(payload.ID, StatusCompleted); err != nil {
-		Context.Error(fmt.Sprintf("Error updating status to COMPLETED: %v", err))
+		logger.Error("main", "Error updating status to COMPLETED", map[string]interface{}{
+			"error": err.Error(),
+		})
 		return Context.Res.Json(ErrorResponse{
 			Error: "Error updating status to COMPLETED",
 		}, Context.Res.WithStatusCode(http.StatusInternalServerError))
 	}
 
+	logger.WithDuration("main", "Recipe processing completed", map[string]interface{}{
+		"recipe_id": recipeID,
+	})
+
 	return Context.Res.Json(toRecipeResponse(payload.URL, recipe))
+}
+
+func ValidatePayload(payload DocumentEventPayload) error {
+	if payload.ID == "" {
+		return errors.New("$id is required in event payload")
+	}
+	if payload.URL == "" {
+		return errors.New("url is required in event payload")
+	}
+	if payload.UserID == "" {
+		return errors.New("user_id is required in event payload")
+	}
+
+	return nil
 }

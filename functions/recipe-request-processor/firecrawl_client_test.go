@@ -52,7 +52,7 @@ func TestFirecrawlStrategy_RawHTMLWithJSONLD(t *testing.T) {
 		},
 	}
 
-	strategy := NewFirecrawlStrategy()
+	strategy := NewFirecrawlStrategy(nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -178,7 +178,7 @@ func TestFirecrawlStrategy_LLMExtractionFallback(t *testing.T) {
 	url := "https://alfiecooks.substack.com/p/caramelised-onion-sun-dried-tomato"
 	t.Logf("Testing LLM extraction fallback with URL: %s", url)
 
-	strategy := NewFirecrawlStrategy()
+	strategy := NewFirecrawlStrategy(nil)
 
 	recipe, err := strategy.Fetch(url)
 	if err != nil {

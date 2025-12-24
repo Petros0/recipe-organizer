@@ -23,15 +23,23 @@ func NewStrategyExecutor(strategies ...FetchStrategy) *StrategyExecutor {
 }
 
 // Execute tries each strategy in order until one succeeds or all fail
-// The logger function is called to log progress messages
-func (e *StrategyExecutor) Execute(url string, logger func(...interface{})) (*Recipe, error) {
+func (e *StrategyExecutor) Execute(url string, logger *Logger) (*Recipe, error) {
 	var lastErr error
 
 	for i, strategy := range e.strategies {
-		logger("Attempting to fetch recipe using " + strategy.Name() + "...")
+		if logger != nil {
+			logger.Info("strategy", "Attempting to fetch recipe", map[string]interface{}{
+				"strategy": strategy.Name(),
+			})
+		}
 
 		recipe, err := strategy.Fetch(url)
 		if err == nil {
+			if logger != nil {
+				logger.Info("strategy", "Recipe fetched successfully", map[string]interface{}{
+					"strategy": strategy.Name(),
+				})
+			}
 			return recipe, nil
 		}
 
@@ -40,11 +48,22 @@ func (e *StrategyExecutor) Execute(url string, logger func(...interface{})) (*Re
 		// Check if we should try the next strategy
 		isLastStrategy := i == len(e.strategies)-1
 		if !isLastStrategy && strategy.CanRetry(err) {
-			logger(strategy.Name() + " failed with retryable error, trying next strategy...")
+			if logger != nil {
+				logger.Info("strategy", "Strategy failed with retryable error, trying next", map[string]interface{}{
+					"strategy": strategy.Name(),
+					"error":    err.Error(),
+				})
+			}
 			continue
 		}
 
 		// Either it's the last strategy or the error is not retryable
+		if logger != nil {
+			logger.Error("strategy", "Strategy failed", map[string]interface{}{
+				"strategy": strategy.Name(),
+				"error":    err.Error(),
+			})
+		}
 		break
 	}
 
